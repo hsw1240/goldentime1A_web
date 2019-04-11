@@ -1,0 +1,16 @@
+p   {    font-size:14px;color:#333232;line-height:22px;/*text-align:justify;*/margin-bottom:0.7em;}
+h3 {
+    margin: 40px 0 20px 0;
+    color: #555;
+    font-size: 20px;
+    margin-bottom:0.7em;
+    }
+.panel    {    margin-top: 20px;    }
+.subtext {    color: #6a747e;    font-size: .9em;}
+.container {
+    min-width:  1200px;
+    max-width:  1200px;
+    min-height:  800px;
+}
+
+

@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<title>골든타임</title>
+	<meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta http-equiv="Expires" content="-1">
+
+	<link rel="stylesheet" href="css/theme/default/style.css" type="text/css">
+    <link rel="stylesheet" href="./bootstrap-3.3.5/css/bootstrap.css">
+    <link rel="stylesheet" href="./bootstrap-3.3.5/css/bootstrap-theme.min.css">
+
+	<link rel="stylesheet" type="text/css" href="./css/jquery.timepicker.css" />
+
+	<link rel="stylesheet" href="./css/style.css" >
+    <link rel="stylesheet" href="./css/BootSideMenu.css" >
+	<link rel="stylesheet" type="text/css" href="./css/jquery.classypopup.css" />
+
+	<script src="./OpenLayers-2.13.1/lib/OpenLayers.js"></script>
+	<script src="./js/jquery-1.11.2.js"></script>
+	<script src="./js/common.js"></script>
+    <script src="./js/util.js"></script>
+    <script src="./js/config.js"></script>
+    <script>
+        defautProjection = "EPSG:5179";
+    </script>
+    <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/jquery-ui.min.js"></script>
+    <script src="./js/jquery.timepicker.js"></script>
+    <script src="./js/bootstrap-datepicker.js"></script>
+    <script src="./js/moment.min.js"></script>
+	<script src="./js/button.js"></script>
+	<script src="./js/BootSideMenu.js"></script>
+    <script src="./js/jquery.classypopup.js"></script>
+
+	<script type="text/javascript" src="./js/ngiiMap.js"></script>
+
+<style>
+	*{
+		margin:0;
+		padding: 0;
+	}
+
+	html, body, #map{
+		height:100%;
+	}
+
+	.olImageLoadError {
+		display: none !important;
+	}
+	</style>	<script>
+
+	var map, layer;
+	var selectedGName='';
+    var selectedWPName ='';
+    var selectElementCode ='';
+    var wfsBasinMerge;
+    var arrRunMeta=[];
+    var clientip;
+    var href = window.location.href;
+    var queryarr = href.split('?');
+    var wfs_NDG_QWP, wfs_NDG_QCTP, wfs_NDG_QCP, wfs_NDG_WOP;
+    var wfs_GovElement;
+
+	var runid = objquery.runid;
+    var grmstatus = false ;//grm 분석중인지 아닌지 확인해서 분석중이라면 runid를 가지고 오다.
+
+	function setUI(){
+        $('#menu').BootSideMenu({
+            side:"left", // left or right
+            autoClose:true // auto close when page loads
+        });
+    }
+
+ function getGrmStatus(){
+        /*
+2018.12.16
+GetGRMStatus + GetGRMRunningStatus
+<status>false</status>
+<startdate>201707150000</startdate>
+<grm_reqtime>2018-12-16T20:42:00+09:00</grm_reqtime>
+<clientip>undefined</clientip>
+<grmstartdate>2018-12-16T19:56:00+09:00</grmstartdate>
+<memo>RealTime Rainall Runoff Start..</memo>
+<runid>10475</runid>
+*/
+        ajaxCall(proxyUrl + encodeURIComponent( getGetServersStatusService )  , function(xml){
+                var msg = $(xml).find("memo").text();
+                if ( grmstatus )
+                 {
+                    runid = $(xml).find("runid").text();
+                    msg = msg +" 분석 진행중  runid =" + runid;
+                 }
+                else
+                {
+                    runid = $(xml).find("runid").text();
+                    msg = msg +" 최종 분석  runid =" + runid;
+                }
+                //모니터링 프로세스의 수가 0 이라면 프로그레스바 non-active
+
+
+                if ( msg.indexOf('0')>-1)
+                  $('#progbar').removeClass('active')
+                else
+                  $('#progbar').addClass('active')
+                 $('#grmstatus').html(msg);
+
+                 var status = $(xml).find("status").text();
+                var startdate = $(xml).find("startdate").text(); //grm 분석 시작시간
+                var grm_reqtime = $(xml).find("grm_reqtime").text();//grm 분석 요청시간
+                var userip = $(xml).find("clientip").text();
+                var grmstartdate  = $(xml).find("grmstartdate").text(); //실제 grm 시작시간
+                var html ="";
+                if ( status =="true")
+                {
+                    grmstatus = true;
+                    html= startdate  +" 분석중( 분석요청시간 - "+ grmstartdate + ")" ;
+                    $('#progbar').addClass('active');
+
+                    setInterval(function(){
+
+                        //2018.09.19 반복 호출 구간
+                        //getToltalAreaProcessinfo();
+                        //getWatchpointCriteriaLevel();
+                        getGovElementCriteriaLevel();
+
+
+                    }, 5000);
+
+                }
+                else{
+                    html="대기중";
+
+                }
+                $('#grmrunningstatus').html(html);
+        } );
+    }	/*상태바 변경 및 grm 상태 메세지 */
+/*
+    function getGrmStatus(){
+        ajaxCall(proxyUrl + encodeURIComponent( getGrmStatusService )  , function(xml){
+            var msg = $(xml).find("Memo").text();
+            if ( grmstatus )
+                runid = $(xml).find("runid").text();
+            //모니터링 프로세스의 수가 0 이라면 프로그레스바 non-active
+            msg = msg +" 최종 분석중 runid =" + runid;
+            if ( msg.indexOf('0')>-1)
+              $('#progbar').removeClass('active')
+            else
+              $('#progbar').addClass('active')
+             $('#grmstatus').html(msg);
+              getWatchpointCriteriaLevel();
+        } );
+    } */
+/*grm이 현재 진행상황*/
+/*
+    function getGrmRunningStatus(){
+        ajaxCall(proxyUrl + encodeURIComponent( getGrmRunningStatusService )  , function(xml){
+            var status = $(xml).find("Status").text();
+            var timetag = $(xml).find("TimeTag").text();
+            var userip = $(xml).find("ClientIP").text();
+            var startdate  = $(xml).find("StartDate").text();
+            var html ="";
+            if ( status =="true")
+            {
+                    grmstatus = true;
+                html= startdate  +" 분석중( 분석요청시간 - "+ timetag + ")" ;
+                $('#progbar').addClass('active');
+
+                setInterval(function(){
+
+                    //2018.09.19 반복 호출 구간
+                    //getToltalAreaProcessinfo();
+                    getWatchpointCriteriaLevel();
+                    //setAlertArea() ;
+                    //setMenu();
+
+                }, 5000);
+
+            }
+            else{
+                html="대기중";
+
+            }
+
+            $('#grmrunningstatus').html(html);
+        } );
+    }
+*/
+    // 각 유역별 프로세스 상황 조회
+        function getGetRunMetaList(){
+            ajaxCall(proxyUrl + encodeURIComponent( getGetRunMetaListUrl )  , getGetRunMetaListProc );
+        }
+
+
+        function  getGetRunMetaListProc(xml){
+
+            // wscode, wsname, gaugecode, criteriaA,criteriaB, criteriaC,criteriaD ,time,value
+            var len = $(xml).find('RunMeta').length;
+            var doc = $(xml) ;
+
+            arrRunMeta= [];
+            for ( var i =0; i< len ; i++) {
+                var objTemp ={};
+               /*
+                if ( i==0 && runid == undefined)
+                 {
+                    runid = $(doc.find('runid')[i]).text();
+                   $("#runid").val ( $(doc.find('runid')[i]).text() );
+                    }
+                    */
+                 objTemp.runid =  $(doc.find('runid')[i]).text();
+
+                 objTemp.runmeta = $(doc.find('runmeta')[i]).text();
+                 objTemp.who = $(doc.find('who')[i]).text();
+                 objTemp.run_starttime = $(doc.find('run_starttime')[i]).text();
+                 objTemp.timetag = $(doc.find('timetag')[i]).text();
+
+
+                arrRunMeta.push( objTemp);
+            }
+            setMenu();
+        }
+        function showSetting( _runid){
+//            alert( _runid );
+            var settingUrl = "setting.html?runid="+_runid;
+            var w = 1900;
+            var h = 950;
+            var left =20; // (screen.width/2)-(w/2);
+            var top = 20; //( screen.availHeight/2)-(h/2)+30;
+
+            var title = 'info';
+             var w =  window.open(settingUrl, "매개변수수정", 'toolbar=no, location=no, directories=no, status=no, '
+            + 'menubar=no, scrollbars=yes, resizable=yes, copyhistory=no, width=' + w
+            + ', height=' + h + ', top=' + top + ', left=' + left);
+        }
+        function showHistory(_runid ){
+            alert(_runid+'에 대한 이력을 조회합니다.')
+            $("#runid").val(_runid) ;
+            runid=_runid;
+        }
+        function setMenu(){
+            var runMetaHtml ='';
+            var lasthtml = '';
+            $('#runMetaHtml').html('');
+
+            //for ( var i = 0 ; i< arrRunMeta.length ; i++){
+ 		for ( var i = 0 ; i<5 ; i++){                var no = i+1;
+
+                 runMetaHtml +='<tr>'+'<td style="padding :8px 3px 8px 3px"><a href="javascript:showHistory('+arrRunMeta[i].runid+');">' +arrRunMeta[i].runid+'<td style="padding :8px 3px 8px 3px">'+ arrRunMeta[i].who+'<td style="padding :8px 3px 8px 3px">'+
+                    arrRunMeta[i].run_starttime+'<td style="padding :8px 3px 8px 3px"><a href="javascript:showSetting(' +arrRunMeta[i].runid +');">매개변수조회</a></tr>';
+            }
+            runMetaHtml += lasthtml ;
+
+            $('#runMetaHtml').html( runMetaHtml);
+
+      }
+      var watchpointCriteriaArr = [];
+      function getWatchpointCriteriaLevel()
+      {
+        var reqData  = {
+            runid : runid
+        };
+        var reqUrl =  createRequestUrl ( getGetWatchpointCriteriaLevelUrl , reqData);
+
+            ajaxCall( reqUrl, function(xml) {
+                watchpointCriteriaArr=[];
+                $(xml).find("WatchpointCriteriaLevel").each( function(){
+                    var elementWpName = $(this).find("wpname").text().trim();
+                    var elementLevel = $(this).find("level").text().trim();
+
+
+                    if ( elementLevel == 1 )
+                        elementLevelTitle ="관심";
+                    else if ( elementLevel == 2 )
+                        elementLevelTitle ="주의";
+                    else if ( elementLevel == 3 )
+                        elementLevelTitle ="경계";
+                    else if ( elementLevel == 4 )
+                        elementLevelTitle ="심각";
+                    var elementObj =new Object();
+
+                    elementObj.wpname = elementWpName;
+                    elementObj.level = elementLevel;
+                    elementObj.leveltitle = elementLevelTitle;
+                    watchpointCriteriaArr.push( elementObj);
+                    //console.log( $(this).text());
+                });
+                /*
+                    $(xml).find("Time").each(function()
+                     {
+                        Time_Arr.push( $(this).text()) ;
+                     });
+                */
+
+                /*조회 내용 html 갱신해봅시다 */
+                var processtablehtml ='';
+                var lasthtml = '';
+                $('#processtablehtml').html('');
+
+                for ( var i = 0 ; i< watchpointCriteriaArr.length ; i++){
+                    var no = i+1;
+                    processtablehtml +='<tr><td>'+no+'<td style="padding :8px 3px 8px 3px">'+watchpointCriteriaArr[i].wpname+'<td style="padding :8px 3px 8px 3px">'+ watchpointCriteriaArr[i].level+'<td style="padding :8px 3px 8px 3px">'+ watchpointCriteriaArr[i].leveltitle+'</tr>';
+
+                }
+                processtablehtml += lasthtml ;
+
+                $('#processtablehtml').html( processtablehtml);
+                setAlertArea();
+            });
+
+      }
+     var govElementCriteriaArr =[];
+     function getGovElementCriteriaLevel()
+      {
+        var reqData  = {
+            runid : runid
+        };
+        var reqUrl =  createRequestUrl ( getGetgGovElementCriteriaLevelUrl , reqData);
+
+            ajaxCall( reqUrl, function(xml) {
+/*
+<GovElementCriteriaLevel diffgr:id="GovElementCriteriaLevel1" msdata:rowOrder="0" diffgr:hasChanges="modified">
+<wpname>ADS_WP1 </wpname>
+<time>201707221830</time>
+<value>237.21</value>
+<usingsf>1</usingsf>
+<usingtl>0</usingtl>
+<projectflood>7000</projectflood>
+<criteriaA>1400</criteriaA>
+<criteriaB>3500</criteriaB>
+<criteriaC>4900</criteriaC>
+<criteriaD>7000</criteriaD>
+<code>ADS </code>
+<namee>Andong-si</namee>
+<sig_cd>47170</sig_cd>
+<level>0</level>
+</GovElementCriteriaLevel>
+*/
+
+
+                $(xml).find("GovElementCriteriaLevel").each( function(){
+                    watchpointCriteriaArr =[];
+                    var elementWpName = $(this).find("wpname").text().trim();
+                    var elementLevel = $(this).find("level").text().trim();
+
+
+                    var elementLevelTitle="정상";
+
+                    if ( elementLevel == 1 )
+                        elementLevelTitle ="관심";
+                    else if ( elementLevel == 2 )
+                        elementLevelTitle ="주의";
+                    else if ( elementLevel == 3 )
+                        elementLevelTitle ="경계";
+                    else if ( elementLevel == 4 )
+                        elementLevelTitle ="심각";
+
+                    var elementObj =new Object();
+                    elementObj.wpname = elementWpName;
+                    elementObj.level = elementLevel;
+                    elementObj.leveltitle = elementLevelTitle;
+                    watchpointCriteriaArr.push( elementObj);
+                    //console.log( $(this).text());
+
+                });
+
+                $(xml).find("GovElementCriteriaLevel2").each(function(){
+                    govElementCriteriaArr =[];
+/*
+<GovElementCriteriaLevel2 diffgr:id="GovElementCriteriaLevel211" msdata:rowOrder="10" diffgr:hasChanges="inserted">
+<sig_cd>47850</sig_cd>
+<sig_cd_level>0</sig_cd_level>
+</GovElementCriteriaLevel2>
+*/
+                    var  sig_cd  = $(this).find("sig_cd").text().trim();
+                    var  sig_cd_value  = $(this).find("sig_cd_level").text().trim();
+                    var sig_cd_level = sig_cd_value.split("$")[0] ;
+                    var sig_cd_namek =sig_cd_value.split("$")[1] ;
+                    var govElementObj = new Object();
+                    govElementObj.sig_cd = sig_cd;
+                    govElementObj.sig_cd_level = sig_cd_level;
+                    govElementObj.sig_cd_namek = sig_cd_namek;
+
+                    govElementCriteriaArr.push( govElementObj);
+                });
+                /*
+                    $(xml).find("Time").each(function()
+                     {
+                        Time_Arr.push( $(this).text()) ;
+                     });
+                */
+
+                /*조회 내용 html 갱신해봅시다 */
+                var processtablehtml ='';
+                var lasthtml = '';
+                $('#processtablehtml').html('');
+
+                for ( var i = 0 ; i< govElementCriteriaArr.length ; i++){
+                    var no = i+1;
+                    processtablehtml +='<tr><td>'+no+'<td style="padding :8px 3px 8px 3px">'+govElementCriteriaArr[i].sig_cd+'<td style="padding :8px 3px 8px 3px">'+ govElementCriteriaArr[i].sig_cd_namek+'<td style="padding :8px 3px 8px 3px">'+ govElementCriteriaArr[i].sig_cd_level+'</tr>';
+
+                }
+                processtablehtml += lasthtml ;
+
+                $('#processtablehtml').html( processtablehtml);
+                setAlertArea();
+            });
+
+      }
+    function setAlertArea()
+     {
+         for ( var i = 0 ; i < wfs_NDG_QWP.features.length ; i++)
+         {
+            var name = wfs_NDG_QWP.features[i].attributes.NAME; //BS:낙동강본류유역, SBSNCD: '', SBSNNM:ndg
+            var fid = wfs_NDG_QWP.features[i].fid;
+            var level = 0;
+            var value, creteriaA,creteriaB, creteriaC, creteriaD ;
+            for ( var j=0; j< watchpointCriteriaArr.length ; j++)
+            {
+                var tempareaname= watchpointCriteriaArr[j].wpname ;
+               // tempareaname =tempareaname.replace(' ','');
+                if ( tempareaname  == name )
+                {
+                    level= watchpointCriteriaArr[j].level;
+                    break;
+                }
+            }
+
+            var feature = wfs_NDG_QWP.getFeatureByFid( fid);
+            if ( level == 0 )
+                wfs_NDG_QWP.drawFeature(  feature,'default' );
+            if ( level ==1 )
+                wfs_NDG_QWP.drawFeature(  feature,'level1' );
+            if ( level ==2 )
+                wfs_NDG_QWP.drawFeature(  feature,'level2' );
+            if ( level ==3 )
+                wfs_NDG_QWP.drawFeature(  feature,'level3' );
+            if ( level ==4 )
+                wfs_NDG_QWP.drawFeature(  feature,'level4' );
+            //console.log( bs, value, creteriaA, creteriaB,creteriaC, level);
+       }
+
+
+       for ( var i = 0 ; i < wfs_GovElement.features.length ;i++)
+         {
+            wfs_GovElement.features[0].attributes.SIG_CD
+            var sig_cd =wfs_GovElement.features[i].attributes.SIG_CD; //SIG_CD: "42190", SIG_ENG_NM: "Taebaek-si", SIG_KOR_NM: "태백시",
+
+            var level = 0;
+            var fid = wfs_GovElement.features[i].fid;
+
+            for ( var j=0; j< govElementCriteriaArr.length ; j++)
+            {
+                var tempSigCd= govElementCriteriaArr[j].sig_cd ;
+               // tempareaname =tempareaname.replace(' ','');
+                if ( tempSigCd  == sig_cd )
+                {
+                    level= govElementCriteriaArr[j].sig_cd_level;
+                    break;
+                }
+            }
+            var feature = wfs_GovElement.getFeatureByFid( fid);
+            if ( level == 0 )
+                wfs_GovElement.drawFeature(  feature,'default' );
+            if ( level ==1 )
+                wfs_GovElement.drawFeature(  feature,'level1' );
+            if ( level ==2 )
+                wfs_GovElement.drawFeature(  feature,'level2' );
+            if ( level ==3 )
+                wfs_GovElement.drawFeature(  feature,'level3' );
+            if ( level ==4 )
+                wfs_GovElement.drawFeature(  feature,'level4' );
+            //console.log( bs, value, creteriaA, creteriaB,creteriaC, level);
+       }
+
+
+
+
+
+
+     }
+
+
+	$(document).ready(function(){
+        $("#runid").val( runid);
+        $("#date").val("2017-07-15");
+        $("#time").val("00:00:00");
+         setUI();
+
+
+        // getGrmRunningStatus();
+
+         getGetRunMetaList();
+         getGrmStatus();
+
+
+         $("#viewHistory").click(function(){
+            window.open("rdefault.html");
+        });
+        $('#stop').click(function(){
+            ajaxCall(proxyUrl + encodeURIComponent( stopService+'clientip='+clientip)  , stopProcess);
+        });
+
+        $('#grmmonitorchedk').click( function(){
+                /* 2015.05.17 프로세스 진행상황 조회 전에 모니터링 상태 조회 한다. */
+            $.ajax({
+                type: 'get'
+                , data: "xml"
+                , url :  proxyUrl + encodeURIComponent( azure_webservice  + "/checkMonitorProcess"  )
+                , success: function( data){
+                    var isMonitorWorking = $(data).find("boolean").text();
+                    if ( isMonitorWorking == 'true' )
+                    {
+                        alert('현재 Azure 서버의 GRM 모니터링 시스템이 정상적으로 동작중');
+                        getGrmStatus(); //모니터링 프로세스 진행상황 조회
+                    }
+                    else
+                    {
+                        alert('현재 Azure 서버의 GRM 모니터링 시스템이 정지상태입니다. 확인하세요');
+
+                    }
+
+                }
+                , error: function(xhr, status, error) { alert(error); }
+            });
+            })
+        $("#parameterSetting").click(function(){
+            var settingUrl = "setting.html";
+            var w = 1900;
+            var h = 950;
+            var left =20; // (screen.width/2)-(w/2);
+            var top = 20; //( screen.availHeight/2)-(h/2)+30;
+
+            var title = 'info';
+             var w =  window.open(settingUrl, "매개변수수정", 'toolbar=no, location=no, directories=no, status=no, '
+            + 'menubar=no, scrollbars=yes, resizable=yes, copyhistory=no, width=' + w
+            + ', height=' + h + ', top=' + top + ', left=' + left);
+        });
+
+
+        $('#stop').click(function(){
+                ajaxCall(proxyUrl + encodeURIComponent( stopService+'clientip='+clientip)  , stopProcess);
+            });
+
+            $('#start').click(function(){
+
+
+                if ( $('#grmrunningstatus').html() !='대기중' )
+                {
+                    alert('분석종료 후 재시작 하세요');
+                    return;
+                }
+
+                if ($('input:text').val().length == 0) {
+                    $(this).parents('p').addClass('warning');
+                }
+                var querydate  =$('#date').val().replace(/-/ig, '') + $('#time').val().replace(/:/ig, '');
+                //querydate="20120916003000"; //11/26 이전
+
+
+                //  querydate="20120917000000"; //11/26 이전
+                // 11/26 이후 .임시
+                //var strTmp = prompt("시점 지정(11/26만 사용할 임시 GUI)", "20120916003000");
+                //querydate= strTmp;
+
+
+                if ( querydate.length != 14 ) {
+                    alertPopup('날짜를 정확히 입력하세요');
+                    return false;
+                }
+                //ajaxCall(proxyUrl + encodeURIComponent( startService + 'sdate='+querydate.substring(0, 12) +'&clientip='+clientip) , startProcess );
+
+                /* 20161127 모니터 살았는지 확인하고  시작 시키도록 수정. */
+
+
+                $.ajax({
+                                type: 'get'
+                                , data: "xml"
+                                , url :  proxyUrl + encodeURIComponent( azure_webservice  + "/checkMonitorProcess"  )
+                                , success: function( data){
+                                    var isMonitorWorking = $(data).find("boolean").text();
+                                    if ( isMonitorWorking != 'true' )
+                                    {
+                                        alert('현재 Azure 서버의 GRM 모니터링 시스템이 정지상태입니다. 확인하세요');
+                                        return;
+                                    }
+                                    else {
+                                        ajaxCall(proxyUrl + encodeURIComponent( startService + 'sdate='+querydate.substring(0, 12) +'&clientip='+clientip) , startProcess );
+                                    }
+                                }
+                                , error: function(xhr, status, error) { alert(error); }
+                });
+            });
+
+            function startProcess(xml ){
+            var retValue =  $(xml).find("string").text();
+            var arrRetValue = retValue.split("$");
+              if ( arrRetValue[0] == '성공' )
+            {
+                runid = arrRetValue[1];
+                $("#runid").val(runid );
+                alertPopup('GRM 모듈을 시작합니다.');
+                grmstatus = true;
+                //2016-06-30 화면 초기 로딩, 시작버튼 누른 경우에만1회 호출하는것으로 수정한다. setTimeout(  getGrmStatus(), 2000);
+               // getGrmRunningStatus();
+				getGrmStatus();            }
+            else
+            {
+
+                alertPopup('GRM 모듈 가동 실패' + retValue);
+            }
+        }
+
+        function stopProcess(xml ){
+            var result = $(xml).find("boolean").text();
+            if ( result )
+            {
+                alertPopup('GRM 모듈을 종료합니다.');
+                grmstatus  = false
+                ////2016-06-30 화면 초기 로딩, 시작버튼 누른 경우에만1회 호출하는것으로 수정한다.   setTimeout(  getGrmStatus(), 2000);
+                $('#progbar').removeClass('active')
+                 getGrmStatus();
+               // getGrmRunningStatus();
+            }
+            else
+             {
+                alertPopup('GRM 모듈종료 실패 ');
+            }
+
+        }
+    });
+
+	function init() {
+
+		var properties = ngii.map.properties;
+
+		map = new OpenLayers.Map("map", {
+			controls:[],
+			eventListeners:{}
+		});
+
+		layer = new OpenLayers.Layer.XYZ(properties.tileNames_en, properties.tileUrls, properties.layerOptions);
+
+		map.addLayers([layer]);
+		map.setBaseLayer(layer);
+		map.setCenter(properties.initCenter, properties.initZoom);
+
+		map.addControl(new OpenLayers.Control.Navigation());
+		map.addControl(new OpenLayers.Control.Attribution({	separator : " "	}));
+		map.addControl(new OpenLayers.Control.LayerSwitcher());
+		map.addControl(new OpenLayers.Control.Scale());
+        map.addControl(new OpenLayers.Control.ScaleLine());
+        map.addControl(new OpenLayers.Control.PanZoomBar());
+        map.addControl(new OpenLayers.Control.MousePosition());
+
+		wfs_NDG_QWP = createWfsmap_new( 'GoldenT:wfs_NDG_QWP', map ); //조건 QWP=1 LABEL : Name
+
+		//console.log(wfs_NDG_QWP);
+
+		var gstyleGvoeElement = new OpenLayers.StyleMap({
+		   "default":new OpenLayers.Style(OpenLayers.Util.applyDefaults({
+				strokeColor: "#0000FF",
+				strokeOpacity: 1,
+				strokeWidth: 3,
+				fillColor: "#00FF00",
+				fillOpacity: 1,
+				pointRadius: 5,
+			}, OpenLayers.Feature.Vector.style["default"])),
+		   "select":new OpenLayers.Style(OpenLayers.Util.applyDefaults({
+								fillColor:"blue",
+								graphicName:"square",
+								rotation:90,
+								pointRadius:15
+							}, OpenLayers.Feature.Vector.style["select"]))
+		});
+
+
+		wfs_GovElement = createWfsmap_new( 'GoldenT:GovElement', map ,'');
+
+        getFeatures (wfs_GovElement ,'GoldenT:TL_SCCO_SIG_TMgrs80_5186_1001' ,"basinZone='낙동강'");
+		getFeatures (wfs_NDG_QWP ,'GoldenT:NDG_WatchPoint_5186' , 'QWP=1');
+
+		function getFeatures(_Layername, _typename , _filter )
+        {
+            var reqData  = {
+                service :'wfs',
+                version : '1.1.0',
+                request : 'GetFeature',
+                outputformat: 'json',
+                srsName :  defautProjection ,
+                typeName : _typename
+             };
+
+             if ( _filter != null && _filter !=""){
+                reqData.CQL_FILTER = _filter;
+             }
+            var reqUrl = createRequestUrl( wfsUrl, reqData );
+
+            ajaxCall( reqUrl , wfsNdgQwpResult , 'json' );
+            function wfsNdgQwpResult( data){
+                    var geojson = new OpenLayers.Format.GeoJSON();
+                    map.addLayer(_Layername );
+                    _Layername.addFeatures(geojson.read(data));
+            }
+        }
+
+		/* wfs_GoldenT:GD_WatchPoint 시작 */
+        var wfsBasinMerge = createWfsmap( 'wfs_GoldenT:GD_WatchPoint', map );
+
+        var gdBasindata  = {
+            service :'wfs',
+            version : '1.1.0',
+            request : 'GetFeature',
+            outputformat: 'json',
+            srsName :  defautProjection ,
+            typeName :'GoldenT:GD_WatchPoint'
+        };
+
+        reqUrl = createRequestUrl( wfsUrl, gdBasindata );
+
+        ajaxCall(  reqUrl , wfsBasinMergeResult , 'json' );
+
+		function wfsBasinMergeResult( data){
+                var geojson = new OpenLayers.Format.GeoJSON();
+                map.addLayer(wfsBasinMerge );
+                    wfsBasinMerge.addFeatures(geojson.read(data));
+        }
+		/* select control 초기화 */
+        selectControl_QWP = new OpenLayers.Control.SelectFeature (
+                wfs_NDG_QWP, {
+                clickout: true,
+                toggle: true,
+                multiple: false,
+                //hover: false,
+                toggleKey: "ctrlKey", // ctrl key removes from selection
+                multipleKey: "shiftKey" // shift key adds to selection
+                }
+        );
+
+         selectControl_GovElement = new OpenLayers.Control.SelectFeature (
+                wfs_GovElement, {
+                clickout: true,
+                toggle: true,
+                multiple: false,
+                //hover: false,
+                toggleKey: "ctrlKey", // ctrl key removes from selection
+                multipleKey: "shiftKey" // shift key adds to selection
+                }
+        );
+
+		map.addControl(selectControl_QWP);
+
+        map.addControl(selectControl_GovElement);
+        selectControl_QWP.activate();
+
+        selectControl_GovElement.activate();
+
+		wfs_NDG_QWP.events.on({
+                "featureselected": function(e) {
+                        //selectedFid =e.feature.fid ;
+                        selectedWPName =e.feature.attributes.NAME ;
+                        selectedGName = e.feature.attributes.GName;
+
+                        showInfo(); //
+                }
+            });
+         wfs_GovElement.events.on({
+                "featureselected": function(e) {
+                        sig_cd = e.feature.attributes.SIG_CD;
+                        sig_eng_nm = e.feature.attributes.SIG_ENG_NM;
+                        sig_kor_nm = e.feature.attributes.SIG_KOR_NM;
+
+
+                        showGovElementInfo(); //
+                }
+            });
+
+		function popupMsg ( _cellid )
+        {
+            alert( _cellid );
+        }
+		//map.zoomToExtent(new OpenLayers.Bounds(bounds).transform( displayProjection , map.getProjection()), true);
+        //map.zoomToExtent(new OpenLayers.Bounds([127.72557415770616,34.78669057044466,129.47315382078028,37.10797245996783]).transform( displayProjection , map.getProjection()), true);
+             $('#search').show();
+
+        map.events.register('zoomend', this, function (event) {
+           var zLevel = map.getZoom();
+           var sc = map.getScale();
+           document.getElementById('MatrikelOutput').innerHTML = "Level: " + zLevel + " Scale: " + sc;
+        });
+
+		function showInfo()
+        {
+            var w = 1850;
+            var h = 950;
+            var left =20; // (screen.width/2)-(w/2);
+            var top = 20; //( screen.availHeight/2)-(h/2)+30;
+            var url = "wpdetail.html";
+            var title = 'info';
+            url = url +'?gname='+ selectedGName + '&runid=' + + $("#runid").val() +'&wpname='+selectedWPName ;
+
+            $('.modal-title').text(selectedWPName);
+
+            var titleArea = selectedWPName;
+            var w =  window.open(url, titleArea, 'toolbar=no, location=no, directories=no, status=no, '
+            + 'menubar=no, scrollbars=yes, resizable=yes, copyhistory=no, width=' + w
+            + ', height=' + h + ', top=' + top + ', left=' + left);
+        }
+
+         function showGovElementInfo()
+        {
+            if ( runid == null || runid == undefined )
+            {
+                alert('GRM 분석을 진행하거나 좌측 메뉴의 이전 GRM 분석결과 항목을 선택하세요');
+                return;
+            }
+            var w = 1850;
+            var h = 950;
+            var left =20; // (screen.width/2)-(w/2);
+            var top = 20; //( screen.availHeight/2)-(h/2)+30;
+            //var url = "hElementdetail.html";
+            var url = "relementdetail.html";
+            var title = 'info';
+            //url = url +'?sig_cd='+ sig_cd +'&runid=' + $("#runid").val()+'&sig_kor_nm='+sig_kor_nm;
+            url = url +'?sig_cd='+ sig_cd +'&runid=' + runid +'&sig_kor_nm='+sig_kor_nm;
+
+            $('.modal-title').text(selectedWPName);
+
+            var titleArea = selectedWPName;
+            var w =  window.open(url, titleArea, 'toolbar=no, location=no, directories=no, status=no, '
+            + 'menubar=no, scrollbars=yes, resizable=yes, copyhistory=no, width=' + w
+            + ', height=' + h + ', top=' + top + ', left=' + left);
+        }
+
+
+	};
+	</script>
+</head>
+<body onload="init()">
+	<div id="selectedWPName" style="display:none"></div>
+	<div id="selectedGName" style="display:none"></div>
+	<div id="sig_cd" style="display:none"></div>
+	<div id="sig_kor_nm" style="display:none"></div>
+	<div id="runid" style="display:none"></div>
+
+	<div id="search">
+		<div class="well custom-well-small" style="align:center;">
+			<input id="date" class="date input_mod"  type="text" placeholder="yyyy-mm-dd" style="text-align:center;" size="12">-
+			<input id="time" class="time input_mod"  type="text" placeholder="hh:mm:ss" style="text-align:center;" size="12">
+			<button type="button" class="btn btn-danger btn_mod" id="start"><span class="glyphicon glyphicon-play" aria-hidden="true"></span></button>
+			<button type="button" class="btn btn-primary btn_mod" id="stop"><span class="glyphicon glyphicon-stop" aria-hidden="true"></span></button>
+			<span class="label label-default" id="grmrunningstatus"></span>
+			<div class="progress">
+				<div id="progbar" class="progress-bar progress-bar-info progress-bar-striped " role="progressbar" aria-valuenow="100" aria-valuemin="100" aria-valuemax="100" style="width: 100%">
+					<span id="grmstatus"> </span>
+				</div>
+			[ 현재 연결된 서버 ]  <div id="usingserver" style="font-size:130%" ></div><button id="grmmonitorchedk">GRM 모니터 확인</button>
+			</div>
+		</div>
+	</div>
+
+
+<div class="legend" id="legend">
+<table>
+    <tr><td bgcolor="#FF0000" width="100px">&nbsp;<td>심각 (4)
+    <tr><td bgcolor="#FF8000" width="100px">&nbsp;<td>경계 (3)
+    <tr><td bgcolor="#FFFF00" width="100px">&nbsp;<td>주의 (2)
+    <tr><td bgcolor="#0000FF" width="100px">&nbsp;<td>관심 (1)
+</table>
+</div>	<!--menu start -->
+	<div id="menu" style="z-index:9999" style="width: 400px;">
+		<div class="user">
+			<!-- <img src="http://image.priceprice.k-img.com/ph/images/common/face_japan_01.gif" alt="Esempio" class="img-thumbnail"> -->
+			<button type="button" class="btn btn-primary btn_mod" id="parameterSetting">매개변수조회</button>
+			  <button type="button" class="btn btn-primary btn_mod disabled" id="viewHistory">분석모드</button>
+			<div class="well"><h1>GRM 분석 요청 목록</h1></div>
+		</div>
+
+		<table class="table  table-bordered table-hover">
+			<tr><td style="padding :8px 3px 8px 3px">runid</td><td  style="padding :8px 3px 8px 3px">작업자</td><td  style="padding :8px 3px 8px 3px">분석요청시작시간</td><td>기타</tr>
+			<tbody id="runMetaHtml">
+			</tbody>
+		</table>
+		<table class="table  table-bordered">
+			   <tr><td style="padding :8px 3px 8px 3px">no</td><td  style="padding :8px 3px 8px 3px">행정코드</td><td  style="padding :8px 3px 8px 3px">행정구역</td><td>경계등급</tr>
+			<tbody id="processtablehtml">
+			</tbody>
+		</table>
+		</div>
+		</div>
+	</div>
+	<!--menu end -->
+
+	<div id="map"></div>
+	<div id="MatrikelOutput"></div>
+
+	<script>
+		$('.time').timepicker({
+			'showDuration': true,
+			'timeFormat': 'H:i:s'
+		});
+
+		$('.date').datepicker({
+			//'format': 'm/d/yyyy',
+			'format': 'yyyy-mm-dd',
+			'autoclose': true
+		});
+
+		$('.date').click(function(){
+			$('.datepicker').css('z-index', 5000);
+		});
+
+		$('.time').click(function(){
+			$('.timepicker').css('z-index', 5000);
+		});
+	</script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

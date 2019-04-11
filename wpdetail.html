@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>골든타임1A</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<script src="./js/jquery-1.11.2.js"></script>
+        <script src="./OpenLayers-2.13.1/lib/OpenLayers.js"></script>
+	<script src="./js/common.js"></script>
+	<script src="./js/util.js"></script>
+
+	<script src="./js/bootstrap.js"></script>
+	<script src="http://code.highcharts.com/stock/highstock.js"></script>
+	<script src="http://code.highcharts.com/stock/modules/exporting.js"></script>
+
+	<script src="js/theme.js"></script>
+
+
+	<link rel="stylesheet" href="./OpenLayers-2.13.1/theme/default/style.css" type="text/css">
+	<link rel="stylesheet" href="./bootstrap-3.3.5/css/bootstrap.css">
+	<link rel="stylesheet" href="./bootstrap-3.3.5/css/bootstrap-theme.min.css">
+
+	<link href="http://fonts.googleapis.com/css?family=Montserrat:400,700" rel="stylesheet" type="text/css">
+    <link href="http://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic" rel="stylesheet" type="text/css">
+
+
+	<link rel="stylesheet" href="./css/style.css" >
+	<script src="./js/showdata.js"></script>
+	<script src="./js/jquery.xml2json.js"></script>
+	<script src="./js/config.js"></script>
+		<!-- <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.0/css/bootstrap-toggle.min.css" rel="stylesheet"> -->
+			<link rel="stylesheet" href="./css/bootstrap-toggle.css" >
+	<script src="./js/bootstrap-toggle.js"></script>
+		<script src="./js/jquery.classypopup.js"></script>
+	<script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/jquery-ui.min.js"></script>
+
+	<link rel="stylesheet" type="text/css" href="./css/jquery.classypopup.css" />
+
+	<script>
+
+		//var sitecode = location.search.split('sitecode=')[1];
+		//var templocation = location.search.replace( '?' , '' );
+		//var queryHash = JSON.stringify( query_to_hash(location.search));
+
+
+		var map, osm, vMap;
+		var vSat , vHybrid;
+        var runid= objquery.runid;
+        var gname= decodeURI ( objquery.gname );
+        var wpname = objquery.wpname;
+        var wopid  =objquery.wopid;
+
+		var refreshTime = 2000; //1sec : 1000
+		//var myRefresh = setInterval(function(){ myRefreshTimer() }, refreshTime);
+        var myRefresh;
+
+		function myRefreshTimer() {
+
+			getChartDataByWPName(wpname)	 ;
+		}
+
+		function myRefreshStopFunction() {
+
+		    clearInterval(myRefresh);
+		}
+
+	    $(function() {
+		    $('#isrefesh').bootstrapToggle({
+	      		on: 'Auto Refresh' ,
+	      		off: 'Auto Refresh',
+	      		size : 'mini'
+	    	});
+	  	});
+
+	  	function startRefresh(){
+ 			myRefresh = setInterval(function(){ myRefreshTimer() }, refreshTime);
+	  	}
+/*
+		$(function() {
+    		$('#isrefresh').change(function() {
+      		if ( $(this).prop('checked'))
+				startRefresh();
+			else
+				myRefreshStopFunction();
+
+    		})
+  		});
+
+*/
+		function initPage() {
+			getChartDataByWPName(  wpname);
+			$('#areaname').html( wpname+'(' +gname +')');
+		} //modify function end
+
+		$(document).ready(function(){
+				initPage();
+				$("input[name=refresh]").change(function() {
+					var radioValue = $(this).val();
+					refreshTime =radioValue;
+
+					if ( radioValue ==-1 )
+						myRefreshStopFunction();
+					else
+					{
+					   startRefresh();
+					}
+
+		      		});
+		});
+
+</script>
+
+
+<script type="text/javascript">
+    jQuery(function ($) {
+        $('.panel-heading span.clickable').on("click", function (e) {
+            if ($(this).hasClass('panel-collapsed')) {
+                // expand the panel
+                $(this).parents('.panel').find('.panel-body').slideDown();
+                $(this).removeClass('panel-collapsed');
+                $(this).find('i').removeClass('glyphicon-chevron-down').addClass('glyphicon-chevron-up');
+            }
+            else {
+                // collapse the panel
+                $(this).parents('.panel').find('.panel-body').slideUp();
+                $(this).addClass('panel-collapsed');
+                $(this).find('i').removeClass('glyphicon-chevron-up').addClass('glyphicon-chevron-down');
+            }
+        });
+    });
+</script>
+
+
+</head>
+<body>
+<!--modal-->
+
+
+
+
+<div class="modal fade bs-example-modal-lg" id="imgModal" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+	<div class="modal-backdrop fade in" style="height: 100%;">
+	</div>
+  	<div class="modal-dialog modal-lg">
+    <div class="modal-content">
+    	<div class="modal-header" ><h4 class="modal-title"><div id="zoomtitle"></div></h4>
+	    	<button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+	      		<h4 class="modal-title" align="center"></h4>
+	    </div>
+		<div class="modal-body" style="width:100% ;height: 90%;">
+			<img class="img-responsive" id="zoomimg" >
+		</div>
+    </div>
+  </div>
+</div>
+<!-- modal-->
+<img src="img/load.gif" id="ajax_loading" style="position:absolute; z-index:9001; display:none; left:49%; top:49%;" />
+
+<!-- 강우 수위 조회-->
+<!-- Modal -->
+    <!-- <div class="well well-sm">    	 -->
+		<!-- top menu start-->
+<nav class="navbar navbar-default"  style="margin-bottom: 0px;">
+  <div class="container-fluid" >
+    <!-- Brand and toggle get grouped for better mobile display -->
+    <div class="navbar-header" >
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="#"><span id="areaname"></span></a>
+      <!-- <button id="test1">test1</button>
+      <button id="test2">test2</button>
+      <button id="test3">test3</button> -->
+    </div>
+
+    <!-- Collect the nav links, forms, and other content for toggling -->
+    <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1" style="">
+           <form class="navbar-form navbar-right" role="search">
+        <label class="radio-inline"><input type="radio" name="refresh" value="-1" > Timer Off</label>
+
+		<label class="radio-inline"><input type="radio" name="refresh" value="2000"  checked> Auto (2 Sec) </label>
+		<label class="radio-inline"><input type="radio" name="refresh" value="10000" > Auto (10 Sec)</label>
+        </form>
+      </ul>
+    </div><!-- /.navbar-collapse -->
+  </div><!-- /.container-fluid -->
+</nav>
+
+	<!--model body-->
+<div class="modal-body" style="width:100% ;height: 10   0%;">
+	<div class="container"  style="width:100% ;height: 100%;">
+		<!-- image list area -->
+		<!-- image list area end -->
+ 			<div class="row">
+ 			<!-- <div class="row-fluid egal"> -->
+ 				<!-- 표영역 -->
+				<div class="col-lg-4 col-mg-4" >
+					<div class="panel panel-primary"  style="margin:0px;">
+			 			<div class="panel-heading" style="padding: 5px 15px;">분석결과 표</div>
+			 			<div class="panel-body fixed-panel" >
+			           <!--  <table class="table  table-fixed table-striped "> -->
+			           <div id="table_container">
+				           <table class="table  table-bordered">
+					            <thead>
+					            <tr id="colheader">
+	<!-- 						     	<th class="col-xs-6">
+							     	일시</th>
+							     	<th class="col-xs-2">관측유량<br/>(CMS)</th>
+							     	<th class="col-xs-2">계산유량<br/>(CMS)</th>
+							     	<th class="col-xs-2">강우<br/>(mm)</th>
+	 -->
+						    	</tr>
+						    	</thead>
+						    	<tbody id="tablelist">
+
+						    	</tbody>
+					  		</table>
+					  </div>
+				  		</div>
+			  		</div>
+			  	</div>
+		 		<!-- 표영역 -->
+
+		 		<div class="col-lg-8 col-mg-5" >
+					<!-- chart area -->
+			 		<div class="panel panel-primary"  style="margin:0px;">
+			 			<div class="panel-heading" style="padding: 5px 15px;" id="chart_bar_title">분석결과 챠트</div>
+			 			<div class="panel-body fixed-panel"><div id="chart"></div>
+			 		</div>
+			 		<!-- chart area -->
+			 	</div>
+			 </div>
+		</div><!--wrap -->
+</div><!--modal body-->
+</div><!--ㅡmodal content -->
+</div>
+	</body>
+
+</html>
+

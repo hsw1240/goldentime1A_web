@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>골든타임1A</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<script src="./js/jquery-1.11.2.js"></script>
+	<script src="./js/util.js"></script>
+
+	<script src="./js/showdata.js"></script>
+	<script src="./js/config.js"></script>
+    <link rel="stylesheet" href="./css/style.css" >
+	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
+
+	<script>
+
+		//var sitecode = location.search.split('sitecode=')[1];
+		//var templocation = location.search.replace( '?' , '' );
+		//var queryHash = JSON.stringify( query_to_hash(location.search));
+
+
+		var map, osm, vMap;
+		var vSat , vHybrid;
+		var siteParameters;
+
+        var arrSubWaterShed = new Array();
+        var runid= objquery.runid;
+		function initPage() {
+            $('#modal').modal('hide');
+		} //modify function end
+		$(document).ready(function(){
+
+/*
+         $("#settingTable").on('click', '.clickable-row', function(e){
+            var tr = $(this);
+            var td = tr.children();
+            var tdArr =new Array();
+            td.each( function(i){
+             tdArr.push(td.eq(i).text());
+            });
+
+            // var rowData = arrSubWaterShed[i];
+            //  var row = $("<tr class='clickable-row' />")
+            // $("#modifyParams").append(row);
+            for ( var i=0;i<tdArr.length ;i++){
+                $("#modifyParams").append($("<input type='text' class='form-control' value=" + tdArr[i]+ "><br/>"));
+            }
+            $('#modal').modal('show');
+         });
+
+
+*/
+            if (runid ==null || runid == undefined )
+          	 ajaxCall(proxyUrl + encodeURIComponent( getGRMSettingLoadUrl  ) , parseParameters );
+            else
+            ajaxCall(proxyUrl +  GRMSettingLoadByRunidUrl +"runid="+runid , parseParameters );
+
+            function parseParameters( xml )            {
+
+                    $("SubWatershedSettings",xml).each(function(){
+                        var objSubWaterShed = new Object();
+
+                        objSubWaterShed.ID    = $("ID", this).text().trim();
+                        objSubWaterShed.IniSaturation    = $("IniSaturation", this).text().trim();
+                        objSubWaterShed.MinSlopeOF    = $("MinSlopeOF", this).text().trim();
+                        objSubWaterShed.UnsaturatedKType    = $("UnsaturatedKType", this).text().trim();
+                        objSubWaterShed.CoefUnsaturatedK    = $("CoefUnsaturatedK", this).text().trim();
+                        objSubWaterShed.MinSlopeChBed    = $("MinSlopeChBed", this).text().trim();
+                        objSubWaterShed.MinChBaseWidth    = $("MinChBaseWidth", this).text().trim();
+                        objSubWaterShed.ChRoughness    = $("ChRoughness", this).text().trim();
+                        objSubWaterShed.DryStreamOrder    = $("DryStreamOrder", this).text().trim();
+                        objSubWaterShed.IniFlow    = $("IniFlow", this).text().trim();
+                        objSubWaterShed.CalCoefLCRoughness    = $("CalCoefLCRoughness", this).text().trim();
+                        objSubWaterShed.CalCoefPorosity    = $("CalCoefPorosity", this).text().trim();
+                        objSubWaterShed.CalCoefWFSuctionHead    = $("CalCoefWFSuctionHead", this).text().trim();
+                        objSubWaterShed.CalCoefHydraulicK    = $("CalCoefHydraulicK", this).text().trim();
+                        objSubWaterShed.CalCoefSoilDepth    = $("CalCoefSoilDepth", this).text().trim();
+                        objSubWaterShed.UserSet    = $("UserSet", this).text().trim();
+                        arrSubWaterShed.push( objSubWaterShed) ;
+                    });
+                    drawParametersTable();
+
+              }
+
+                $('#modify').click(function()
+                {
+        			var inisat = $('#IniSaturation').val();
+        			var minSlopeChannel = $('#MinSlopeChBed').val();
+        			var roughnessChannel = $('#ChRoughness').val();
+        			var iniFlow = $('#IniFlow').val();
+        			var soilHydraulicCond = $('#CalCoefHydraulicK').val();
+                    var applyIniFlow = $('#IniFlow').val();
+        			//var applyIniFlow = true;
+
+                    var minslopeof = $('#MinSlopeOF').val();
+                    var minchbasewidth = $("#MinChBaseWidth").val();
+                    var drystreamorder = $("#DryStreamOrder").val();
+                    var calcoeflcroughness = $("#CalCoefLCRoughness").val();
+                    var calcoefsoildepth = $("#CalCoefSoilDepth").val();
+                    var calcoefporosity = $("#CalCoefPorosity").val();
+                    var calcoefwfsuctionhead = $("#CalCoefWFSuctionHead").val();
+                                //2017.10.25 매개변수 모두 변경할 수 있도록 수정.
+
+        			var query  = 'wopid='+selectedWOPID+'&inisat='+inisat +'&minSlopeChannel='+minSlopeChannel+'&roughnessChannel='+roughnessChannel+'&iniFlow='+iniFlow+'&soilHydraulicCond='+soilHydraulicCond+'&applyIniFlow='+applyIniFlow + '&minslopeof='+minslopeof +'&minchbasewidth='+minchbasewidth +'&drystreamorder='+drystreamorder+'&calcoeflcroughness='+calcoeflcroughness+'&calcoefsoildepth='+calcoefsoildepth+'&calcoefporosity='+calcoefporosity+'&calcoefwfsuctionhead='+calcoefwfsuctionhead                 ;
+
+        			ajaxCall ( proxyUrl + encodeURIComponent( setParameterService + query ), function( xml){
+        				var result = $(xml).find("boolean").text();
+        				if ( result )
+        					alertPopup('매개변수를 저장하였습니다. 변경된 매개변수에 대한 적용은 프로세스를 종료 후 재시작해주시기 바랍니다.');
+        				else
+        					alertPopup('매개변수 저장 중 문제가 발생하였습니다.');
+        				});
+        			} );
+
+				initPage();
+		});
+
+
+		function startSetParameterService( xml ){
+
+			var result = $(xml).find("boolean").text();
+			if ( result )
+				alertPopup('매개변수를 저장하였습니다. 변경된 매개변수에 대한 적용은 프로세스를 종료 후 재시작해주시기 바랍니다.');
+			else
+				alertPopup('매개변수 저장 중 문제가 발생하였습니다.');
+		}
+
+
+</script>
+<script type="text/javascript">
+    jQuery(function ($) {
+        $('.panel-heading span.clickable').on("click", function (e) {
+            if ($(this).hasClass('panel-collapsed')) {
+                // expand the panel
+                $(this).parents('.panel').find('.panel-body').slideDown();
+                $(this).removeClass('panel-collapsed');
+                $(this).find('i').removeClass('glyphicon-chevron-down').addClass('glyphicon-chevron-up');
+            }
+            else {
+                // collapse the panel
+                $(this).parents('.panel').find('.panel-body').slideUp();
+                $(this).addClass('panel-collapsed');
+                $(this).find('i').removeClass('glyphicon-chevron-up').addClass('glyphicon-chevron-down');
+            }
+        });
+    });
+</script>
+</head>
+
+<!-- modal start -->
+<div class="modal" tabindex="-1" role="dialog" id="modal">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Modal title</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div id="modifyParams">
+
+            <div class="form-group row">
+                <label for="inputPassword" class="col-sm-2 col-form-label">Password</label>
+                <div class="col-sm-10">
+                <input type="password" class="form-control" id="inputPassword" placeholder="Password">
+                </div>
+                <label for="inputPassword" class="col-sm-2 col-form-label">Password</label>
+                <div class="col-sm-10">
+                <input type="password" class="form-control" id="inputPassword" placeholder="Password">
+                </div>
+            </div>
+              <div class="form-group row">
+                <label for="inputPassword" class="col-sm-2 col-form-label">Password</label>
+                <div class="col-sm-10">
+                <input type="password" class="form-control" id="inputPassword" placeholder="Password">
+                </div>
+                <label for="inputPassword" class="col-sm-2 col-form-label">Password</label>
+                <div class="col-sm-10">
+                <input type="password" class="form-control" id="inputPassword" placeholder="Password">
+                </div>
+            </div>
+              <div class="form-group row">
+                <label for="inputPassword" class="col-sm-2 col-form-label">Password</label>
+                <div class="col-sm-10">
+                <input type="password" class="form-control" id="inputPassword" placeholder="Password">
+                </div>
+                <label for="inputPassword" class="col-sm-2 col-form-label">Password</label>
+                <div class="col-sm-10">
+                <input type="password" class="form-control" id="inputPassword" placeholder="Password">
+                </div>
+            </div>
+        </div>
+      </div><!-- body end -->
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary">Save changes</button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- modal end -->
+
+<div class="card" >
+    <div class="card-header text-white bg-success">
+        매개변수 조회 및 수정
+    </div>
+    <table class="table table-hover" id="settingTable">
+        <thead class="thead-dark">
+        <tr id="setting" align="center">
+            <!-- <th scope="col" text-align: center; >NO</th> -->
+            <th scope="col">ID</th>
+            <th scope="col">IniSaturation</th>
+            <th scope="col">MinSlopeOF</th>
+            <th scope="col">UnsaturatedKType</th>
+            <th scope="col">CoefUnsaturatedK</th>
+            <th scope="col">MinSlopeChBed</th>
+            <th scope="col">MinChBaseWidth</th>
+            <th scope="col">ChRoughness</th>
+            <th scope="col">DryStreamOrder</th>
+            <th scope="col">IniFlow</th>
+            <th scope="col">CalCoefLCRoughness</th>
+            <th scope="col">CalCoefPorosity</th>
+            <th scope="col">CalCoefWFSuctionHead</th>
+            <th scope="col">CalCoefHydraulicK</th>
+            <th scope="col">CalCoefSoilDepth</th>
+            <!-- <th scope="col">UserSet</th> -->
+         </tr>
+        </thead>
+        <tbody id="settinglist">
+        </tbody>
+    </table>
+</div>
+</body>
+</html>
+

@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>골든타임 </title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+
+
+    <link rel="stylesheet" href="./OpenLayers-2.13.1/theme/default/style.css" type="text/css">
+    <link rel="stylesheet" href="./bootstrap-3.3.5/css/bootstrap.css">
+    <link rel="stylesheet" href="./bootstrap-3.3.5/css/bootstrap-theme.min.css">
+
+      <link rel="stylesheet" type="text/css" href="./css/jquery.timepicker.css" /><!--
+    <link rel="stylesheet" type="text/css" href="./css/bootstrap-datepicker.css" />
+ <link rel="stylesheet" href="./css/jquery-ui.css" type="text/css" media="all" /> 2016.12.29 100% unused -->
+
+    <link rel="stylesheet" href="./css/style.css" >
+    <link rel="stylesheet" href="./css/BootSideMenu.css" >
+
+    <script src="./OpenLayers-2.13.1/lib/OpenLayers.js"></script>
+    <script src="http://map.vworld.kr/js/apis.do?type=Base&apiKey=7696B8C8-A6B4-358B-8288-81EDA9A308C8 "></script> <!-- golden or hydroradar-->
+
+    <script src="http://map.vworld.kr/js/apis.do?type=Base&apiKey=64741AAF-7FE8-3C88-BFD7-33545F8C8511 "></script><!--131-->
+
+    <script src="./js/jquery-1.11.2.js"></script>
+    <script src="./js/common.js"></script>
+    <script src="./js/util.js"></script>
+    <script src="./js/config.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/jquery-ui.min.js"></script>
+
+
+    <script>
+OpenLayers.ProxyHost = "http://dev.openlayers.org/sandbox/august/trunk/util/openlayers-proxy.jsp?url=";
+    var HydroRadar_Map, comp201502091400, comp201502091410,comp201502091430,comp201502091440 ;
+    var map, osm, vMap;
+    var vSat , vHybrid, vGray, vMidnight;
+    var selectedAreaName='';
+
+    var selectedFid='';
+    var selectedAreaCode ='';
+    var wfsBasinMerge;
+    var process_arr=[];
+    var clientip;
+    var href = window.location.href;
+    var queryarr = href.split('?');
+
+    $(document).ready(function(){
+
+    });
+
+
+    function init()
+    {
+        var option = {
+            controls: [
+            new OpenLayers.Control.Attribution()
+            ],
+            projection: new OpenLayers.Projection( defautProjection ),
+            displayProjection: new OpenLayers.Projection( displayProjection ),
+            numZoomLevels:20
+        };
+
+        map = new OpenLayers.Map("map", option);
+        osm = new OpenLayers.Layer.OSM();
+
+        vMap = new vworld.Layers.Base('브이월드');
+        vSAT = new vworld.Layers.Satellite('브이월드(영상)');
+        vHybrid = new vworld.Layers.Hybrid('브이월드(영상용 라벨)');
+        vGray = new vworld.Layers.Gray("브이월드(Gray)");
+        vMidnight = new vworld.Layers.Midnight("브이월드(Midnight)");
+
+        if (vMap != null) { map.addLayer(vMap) ;}
+        if (vSAT != null) {map.addLayer(vSAT);};
+        if (vHybrid != null) {map.addLayer(vHybrid);}
+        if (vGray != null) {map.addLayer(vGray);}
+        if (vMidnight != null) {map.addLayer(vMidnight);}
+
+        map.addLayer(osm);
+
+        vHybrid.setVisibility(false);
+
+        var switcherControl = new OpenLayers.Control.LayerSwitcher();
+        map.addControl(switcherControl);
+        map.addControl(new OpenLayers.Control.Navigation());
+        map.addControl(new OpenLayers.Control.Scale());
+        map.addControl(new OpenLayers.Control.ScaleLine());
+        map.addControl(new OpenLayers.Control.PanZoomBar());
+        map.addControl(new OpenLayers.Control.MousePosition());
+//http://hygis-server.southeastasia.cloudapp.azure.com:8080/geoserver/GoldenT/wms?service=WMS&version=1.1.0&request=GetMap&layers=GoldenT:GD_WatchPoint&styles=&bbox=310588.1875,292989.9609375,396088.1875,366989.9609375&width=768&height=664&srs=EPSG:5181&format=application/openlayers
+        var gdLayer  = createWmsLayer( "GoldenT:GD_WatchPoint");
+        map.addLayer ( gdLayer );
+
+        //var ngdLayer  = createWmsLayer( "GoldenT:ND500_Watchpoint_Grid"); //낙동강 500 격자 생략 2018/07/09
+        //map.addLayer ( ngdLayer );
+
+        var admin_boundary_layer = createWmsLayeWithAlias("행정구역_TL_SCCO_SIG_TMgrs80_5186", "GoldenT:TL_SCCO_SIG_TMgrs80_5186");
+        map.addLayer( admin_boundary_layer          );
+//http://hygis-server.southeastasia.cloudapp.azure.com:8080/geoserver/GoldenT/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GoldenT:GD_WatchPoint&maxFeatures=50
+
+/* 추가 */
+
+// only define
+
+
+        wfsNDGWatchPoint = createWfsmap_new( 'GoldenT:NDG_WatchPoint_5186', map );
+        wfs_NDG_QWP = createWfsmap_new( 'GoldenT:wfs_NDG_QWP', map ); //조건 QWP=1 LABEL : Name
+        wfs_NDG_TWP = createWfsmap_new( 'GoldenT:wfs_NDG_TWP', map ); //조건 TWP=1 LABEL : Name
+        wfs_NDG_QCTP = createWfsmap_new( 'GoldenT:wfs_NDG_QCTP', map ); //조건 qctp=1 LABEL : Name
+        wfs_NDG_QCP = createWfsmap_new( 'GoldenT:wfs_NDG_QCP', map ); //조건 QCP=1 LABEL = GName
+        wfs_NDG_WOP = createWfsmap_new( 'GoldenT:wfs_NDG_WOP', map ); //조건 WOP=1  LABEL : WOPID
+
+        var wms_ndg_qwp, wms_ndg_twp, wms_ndg_qctp, wms_ndg_qcp ,wms_ndg_wop ;
+        /*
+        wms_ndg_qwp = createWmsLayeWithAlias("GoldenT:NDG_QWP", "GoldenT:NDG_WatchPoint_5186","QWP=1");
+        wms_ndg_twp= createWmsLayeWithAlias("GoldenT:NDG_TWP", "GoldenT:NDG_WatchPoint_5186","TWP=1");
+        wms_ndg_qctp= createWmsLayeWithAlias("GoldenT:NDG_QCTP", "GoldenT:NDG_WatchPoint_5186","QCTP=1");
+        wms_ndg_qcp= createWmsLayeWithAlias("GoldenT:NDG_QCP", "GoldenT:NDG_WatchPoint_5186","QCP=1");
+        wms_ndg_wop= createWmsLayeWithAlias("GoldenT:NDG_WOP", "GoldenT:NDG_WatchPoint_5186","WOP=1");
+        */
+        wms_ndg_qwp = createWmsLayeWithAlias("GoldenT:NDG_QWP", "GoldenT:NDG_WatchPoint_QWP");
+        wms_ndg_twp = createWmsLayeWithAlias("GoldenT:NDG_TWP", "GoldenT:NDG_WatchPoint_TWP");
+        wms_ndg_qctp = createWmsLayeWithAlias("GoldenT:NDG_QCTP", "GoldenT:NDG_WatchPoint_QCTP");
+        wms_ndg_qcp = createWmsLayeWithAlias("GoldenT:NDG_QCP", "GoldenT:NDG_WatchPoint_QCP");
+        wms_ndg_wop = createWmsLayeWithAlias("GoldenT:NDG_WOP", "GoldenT:NDG_WatchPoint_WOP");
+
+
+
+
+        map.addLayer (wms_ndg_qwp );
+        //map.addLayer (wms_ndg_twp );
+        map.addLayer (wms_ndg_qctp );
+        map.addLayer (wms_ndg_qcp );
+        map.addLayer (wms_ndg_wop );
+/* 종료 */
+
+/* wfs_GoldenT:GD_WatchPoint 시작 */
+        var wfsBasinMerge = createWfsmap( 'wfs_GoldenT:GD_WatchPoint', map );
+
+        var data  = {
+            service :'wfs',
+            version : '1.1.0',
+            request : 'GetFeature',
+            outputformat: 'json',
+            srsName :  defautProjection ,
+            typeName :'GoldenT:GD_WatchPoint'
+        };
+
+        var reqUrl = createRequestUrl( wfsUrl, data );
+
+        ajaxCall(
+            reqUrl
+            , function(data ){
+
+                var geojson = new OpenLayers.Format.GeoJSON();
+                map.addLayer(wfsBasinMerge );
+                    wfsBasinMerge.addFeatures(geojson.read(data));
+                //map.zoomToExtent(wfsBasinMerge.getDataExtent());
+            }
+            , 'json'
+        );
+
+        selectControl = new OpenLayers.Control.SelectFeature (
+            [wfsBasinMerge,wfsNDGWatchPoint], {
+            clickout: true,
+            toggle: true,
+            multiple: false,
+            //hover: false,
+            toggleKey: "ctrlKey", // ctrl key removes from selection
+            multipleKey: "shiftKey" // shift key adds to selection
+            }
+        );
+
+         highlightControl = new OpenLayers.Control.SelectFeature(
+                wfsBasinMerge,
+                    {
+                        //clickout: true, toggle: false,
+                        multiple:false, hover:true, highlightOnly:true,
+                        eventListeners:{
+                            featurehighlighted: function (event) {
+                                event.feature.layer.drawFeature(
+                                        event.feature,
+                                        'highlight'
+                                );
+                            },
+                            featureunhighlighted: function (event) {
+                                event.feature.layer.drawFeature(
+                                        event.feature,
+                                                'default'
+                                );
+                            }
+                        }
+                    }
+            );
+
+       map.addControl(selectControl);
+       selectControl.activate();
+
+
+       wfsBasinMerge.events.on({
+            "featureselected": function(e) {
+                selectedFid =e.feature.fid ;
+                selectedAreaCode =e.feature.attributes.Cell_ID ;
+                popupMsg(  e.feature.attributes.Cell_ID )  ;
+            },
+
+            "featureunselected": function(e) {
+
+                //var level = getLevel (  e.feature.fid);
+                //  if ( level != 0 )
+                //  redraw(  e.feature.fid , level );
+            }
+        });
+/*
+GoldenT:ND500_Watchpoint_Grid 추가
+*/
+        //var wfsNDGWatchPoint = createWfsmap( 'wfs_GoldenT:NDG_WatchPoint', map );
+
+/*
+2018.07.19 낙동강 그리드건 문제 해제
+        var styleNDGWatchPoint = new OpenLayers.StyleMap({
+                "default": new OpenLayers.Style( OpenLayers.Util.applyDefaults({
+                    fillColor : "blue",
+                    strokeColor :"gray",
+                    graphicName :"square",
+                    pointRadius : 15
+                }, OpenLayers.Feature.Vector.style["default"])),
+                "select" : new OpenLayers.Style ( OpenLayers.Util.applyDefaults({
+                    graphicName :"square",
+                    pointRadius : 15
+                }, OpenLayers.Feature.Vector.style["select"]))
+        });
+        var wfsNDGWatchPoint = new OpenLayers.Layer.Vector("wfs_GoldenT:NDG_WatchPoint",{
+            styleMap : styleNDGWatchPoint
+            });
+
+        var data  = {
+            service :'wfs',
+            version : '1.1.0',
+            request : 'GetFeature',
+            outputformat: 'json',
+            srsName :  defautProjection ,
+            typeName :'GoldenT:ND500_Watchpoint_Grid'
+        };
+
+        reqUrl = createRequestUrl( wfsUrl, data );
+
+        ajaxCall(
+            reqUrl
+            , function(data ){
+
+                var geojson = new OpenLayers.Format.GeoJSON();
+                map.addLayer(wfsNDGWatchPoint );
+                wfsNDGWatchPoint.addFeatures(geojson.read(data));
+
+            }
+            , 'json'
+        );
+
+       wfsNDGWatchPoint.events.on({
+            "featureselected": function(e) {
+                selectedFid =e.feature.fid ;
+                selectedAreaCode =e.feature.attributes.Cell_ID ;
+                popupMsg(  e.feature.attributes.Cell_ID )  ;
+            },
+
+            "featureunselected": function(e) {
+
+                //var level = getLevel (  e.feature.fid);
+                //  if ( level != 0 )
+                //  redraw(  e.feature.fid , level );
+            }
+        });
+
+
+*/
+        function popupMsg ( _cellid )
+        {
+            alert( _cellid );
+        }
+        map.zoomToExtent(new OpenLayers.Bounds(bounds).transform( displayProjection , map.getProjection()), 10);
+
+        map.events.register('zoomend', this, function (event) {
+           var zLevel = map.getZoom();
+           var sc = map.getScale();
+           document.getElementById('MatrikelOutput').innerHTML = "Level: " + zLevel + " Scale: " + sc;
+        });
+     }
+
+</script>
+
+</head>
+<body onload="init()">
+ <div id="map" class="smallmap">
+ <div id="MatrikelOutput"></div>
+ </body>
+</html>

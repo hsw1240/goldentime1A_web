@@ -1,0 +1,144 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="./css/local.css">
+    <link href="./css/jumbotron-narrow.css" rel="stylesheet">
+    <script src='./js/jquery-1.11.2.js'></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script>
+                $(document).ready(function(){
+                    $('#tabs a').click(function (e) {
+                             e.preventDefault()
+                        $(this).tab('show')
+                        });
+                });
+    </script>
+
+
+</head>
+<body>
+<div class="container">
+<!-- 네비게이션 메뉴 -->
+<h1 class="text-muted">GRM<span> (Grid based Rainfall-runoff Model)</span></h1>
+    <div class="header clearfix" id="tabs">
+            <nav>
+              <ul class="nav nav-pills pull-right">
+                  <li role="presentation" class="active"><a href="#grm">GRM</a></li>
+                  <li role="presentation"><a href="#grmgui">GRM GUI</a></li>
+                  <li role="presentation"><a href="#tools">Pre and post processing tools</a></li>
+                  <li role="presentation"><a href="#download">Download</a></li>
+              </ul>
+            </nav>
+
+    </div>
+<!-- 네비게이션 메뉴 -->
+
+ <!-- Tab panes -->
+
+  <div class="tab-content">
+   <!-- 첫번째 탭 내용-->
+    <div role="tabpanel" class="tab-pane active" id="grm">
+        <div class="panel panel-default"><div class="panel-heading"><h3 class="panel-title">about GRM</h3> </div>
+            <div class="panel-body">
+                 <p>  GRM(Grid based Rainfall-runoff Model)은 '21세기 프론티어연구개발사업' 중 '수자원의 지속적확보기술개발사업단'의 'HyGIS 개발 및 적용' 과제를 통하여  한국건설기술연구원에서 처음 개발된 격자 기반의 물리적 분포형 강우-유출 모형이다. </p>
+                 <p>GRM 모형의 개발 연혁은 다음과 같다.
+                <p><span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span> GRM 모형은 2008년에 지표면 유출, 하도 유출, 지표하 유출, 흐름제어 유량 등을 모의할 수 있도록 개발되었다.
+                <p><span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span> 2008년에는 수자원 지리정보시스템인 HyGIS의 add-on인 HyGIS-GRM으로 개발되었으며, HyGIS 환경에서 extension 메뉴로 실행되었다.
+                <p><span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span> 2010년에는 기저유출 모의가 추가되었다. 실시간 강우자료를 이용한 실시간 유출해석 모듈이 개발 되었다.
+                <p><span class="glyphicon glyphicon-pushpin" aria-hidden="true"></span> 2011년에는 HyGIS 소프트웨어 패키지에 포함되어 출시되었다. GRM 모형 및 모델링 S/W의 코드 리팩토링이 이루어 졌다.
+                <p><span class="glyphicon glyphicon-pushpin" aria-hidden="true"></span> 2012년에는 단일 유역에 대한 다지점 보정 기법이 개발되었다.
+                <p><span class="glyphicon glyphicon-pushpin" aria-hidden="true"></span> 2013년에는 GUI 없이 GRM을 실행시킬 수 있는 GRMMP가 개발되었다.
+                <p>‣ 2014년에는 침투, 지표하 유출, 기저유출 모의 기법이 개선되었다. 오픈소스 GIS인 MapWindow GIS(v.4.8.8)에서 구동할 수 있는 plug-in인 MW-GRM이 개발되었다.
+                <p>PEST를 이용한 불확실도 해석 모듈이 개발되었다.
+                <p>‣ 2015년에는 계산시간 간격(dt)에 대한 민감도가 개선되었다. 실시간 유출해석 모듈이 실시간 흐름제어를 모의할 수 있도록 개선되었다.
+                <p>다수의 유역시스템을 연계 해석할 수 있는 다지점 보정기법이 개발되었다.
+                <p>‣ 2016년에는 MapWindow 5에서 구동할 수 있는 plug-in이 개발되었다.
+                <p>GRM 모형은 한국건설기술연구원에서 지속적으로 개발되고 있으며, 기존 모형의 안정성 향상, 기능 추가, 모델링 S/W 개발 등이 진행되고 있다.
+            </div>
+        </div>
+    </div>
+     <!-- 첫번째 탭 내용-->
+   <!--두번째 탭 내용-->
+    <div role="tabpanel" class="tab-pane" id="grmgui">
+      <div class="panel panel-default"><div class="panel-heading"><h3 class="panel-title">GRM GUI</h3> </div>
+            <div class="panel-body">
+                <p>2017.3. 현재 GRM GUI는 GRM 모형과 통합된 형태로 개발되었으며, MapWindow 4.8.8 plug-in 인 MW-GRM에 포함되어 있다.
+                <p>현재 GRM 모형의 QGIS plug-in GUI를 개발 중에 있다.
+            </div>
+            </div>
+    </div>
+    <!--두번째 탭 내용-->
+    <!--세번째 탭 내용-->
+    <div role="tabpanel" class="tab-pane" id="tools">
+         <div class="panel panel-default"><div class="panel-heading"><h3 class="panel-title">Pro and post-processing Tools</h3> </div>
+            <div class="panel-body">
+            <p>GRM 모형은 DEM, 토양도 및 토지피복도를 이용해서 생성된 지형 및 공간자료와 강우 레이어 등과 같은 많은 래스터 자료를 이용한다.
+            <p>Pre- and post-processing tools는 GRM의 입력자료 생성과 래스터 파일 처리를 위한 다양한 기능을 제공한다.
+            <p>Pre- and post-processing tools는 Drainage Tools와 GRM Tools로 구성된다. MapWindow에서 Plug-in으로 실행된다.
+
+            <h3>1. GRM Tools</h3>
+            <p>GRM Tools에서는 다수의 입력파일과 모의결과 파일을 전후처리하기 위한 다양한 도구를 포함하고 있다.
+            <p>점 자료를 이용한 래스터 레이어 생성, 래스터 파일의 변환 및 클리핑과 리샘플링, 텍스트 파일 편집, 강우자료의 보정, 래스터 시계열 자료로 부터
+            다양한 정보 추출 기능, 위성영상을 이용한 강우 자료 생성, 정밀토양도를 이용한 토성 및 토양심 자료 생성 등의 기능을 제공한다.
+            <p>MW-GRM의 메뉴로 제공된다.
+
+        <h3>2. Drainage Tools</h3>
+        <p>(Drainage Tools는 현재 개발 중이며, 향후 GRM의 QGIS plug-in GUI와 함께 제동될 예정이다.)
+        <p>DEM 분석을 통해서 유역, 경사, 흐름방향, 흐름누적수, 하천망 레이어 등과 같이 GRM의 입력 지형자료를 생성할 수 있는 GIS 도구이다.
+        <!-- Drainage Tools에서는 HyGIS의 sink와 flat area 처리 모듈과, TauDEM의 유역생성 모듈을 이용하여 DEM을 이용한 수문학적 지형인자를 생성한다. -->
+    </div></div>
+    </div>
+    <!--세번째 탭 내용-->
+    <!--네번째 탭 내용-->
+    <div role="tabpanel" class="tab-pane" id="download">
+         <div class="panel panel-default"><div class="panel-heading"><h3 class="panel-title">Download</h3> </div>
+            <div class="panel-body">
+                <h3>Latest version</h3>
+                <h3>MW-GRM</h3>
+                <p><a href="./data/GRM_20170201.zip">GRM_20170201.zip</a><span class="subtext"> ( uploaded Mar 6, 2017 )</span>
+                <p>- GRM 모형, GRM 모형의 실행을 위한 GUI, GRM Tools 포함
+                <p>- MapWindow 4.8.8 환경에서 실행하기 위한 plug-in
+
+                <h3>Pre- and post-processing tools   </h3>  <!-- 다운로드 받을 파일 이름.zip -->
+                <p>     GRM Tools는 MW-GRM에 포함되어 있음
+                <p>(Drainage Tools는 향후 QGIS plug-in과 함께 배포될 예정)
+
+                <h3>Document</h3>
+                <p>      <a href="./data/MWGRM 사용설명서.pdf">MWGRM 사용설명서.pdf</a><span class="subtext"> ( uploaded Mar 6, 2017 )</span>
+                <!-- 간단한 설명(ex. 이 파일은 windows10에서 테스트된 버전입니다.) -->
+                <p><a href="./data/MWGRM 환경설정 및 시작 가이드라인.pdf">MWGRM 환경설정 및 시작 가이드라인.pdf</a><span class="subtext"> ( uploaded Mar 6, 2017 )</span>
+                <!-- 간단한 설명(ex. 이 파일은 windows10에서 테스트된 버전입니다.) -->
+
+                <!-- Old version -->
+
+                <!-- MW-GRM
+                다운로드 받을 파일 이름1.zip
+                간단한 설명(ex. 이 파일은 windows10에서 테스트된 버전입니다.)
+                다운로드 받을 파일 이름2.zip
+                간단한 설명(ex. 이 파일은 windows10에서 테스트된 버전입니다.)
+                Pre- and post-processes tools
+                다운로드 받을 파일 이름1.zip
+                간단한 설명(ex. 이 파일은 windows10에서 테스트된 버전입니다.)
+                다운로드 받을 파일 이름2.zip
+                간단한 설명(ex. 이 파일은 windows10에서 테스트된 버전입니다.)
+
+                Document
+                다운로드 받을 파일 이름1.zip
+                간단한 설명(ex. 이 파일은 windows10에서 테스트된 버전입니다.)
+                다운로드 받을 파일 이름2.zip
+                간단한 설명(ex. 이 파일은 windows10에서 테스트된 버전입니다.) -->
+    </div></div></div>
+    <!--네번째 탭 내용-->
+</div>
+<table><tr>
+<td width=80%></td>
+<td><img src="img/kict_t.png" width="100px" height="100px">
+<td><img src="img/hermesys.jpg" >
+</tr></table>
+
+</div> <!-- container-->
+</body>
+</html>

@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>골든타임 </title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+
+
+    <link rel="stylesheet" href="./OpenLayers-2.13.1/theme/default/style.css" type="text/css">
+    <link rel="stylesheet" href="./bootstrap-3.3.5/css/bootstrap.css">
+    <link rel="stylesheet" href="./bootstrap-3.3.5/css/bootstrap-theme.min.css">
+
+      <link rel="stylesheet" type="text/css" href="./css/jquery.timepicker.css" /><!--
+    <link rel="stylesheet" type="text/css" href="./css/bootstrap-datepicker.css" />
+ <link rel="stylesheet" href="./css/jquery-ui.css" type="text/css" media="all" /> 2016.12.29 100% unused -->
+
+    <link rel="stylesheet" href="./css/style.css" >
+    <link rel="stylesheet" href="./css/BootSideMenu.css" >
+    <link rel="stylesheet" type="text/css" href="./css/jquery.classypopup.css" />
+    <script src="./OpenLayers-2.13.1/lib/OpenLayers.js"></script>
+    <script src="http://map.vworld.kr/js/apis.do?type=Base&apiKey=7696B8C8-A6B4-358B-8288-81EDA9A308C8 "></script> <!-- golden or hydroradar-->
+
+    <script src="http://map.vworld.kr/js/apis.do?type=Base&apiKey=64741AAF-7FE8-3C88-BFD7-33545F8C8511 "></script><!--131-->
+
+    <script src="./js/jquery-1.11.2.js"></script>
+    <script src="./js/common.js"></script>
+    <script src="./js/util.js"></script>
+    <script src="./js/config.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/jquery-ui.min.js"></script>
+    <script src="./js/jquery.timepicker.js"></script>
+    <script src="./js/bootstrap-datepicker.js"></script>
+    <script src="./js/moment.min.js"></script>
+    <script src="./js/button.js"></script>
+    <script src="./js/BootSideMenu.js"></script>
+    <script src="./js/jquery.classypopup.js"></script>
+    <script>
+    //OpenLayers.ProxyHost = "http://dev.openlayers.org/sandbox/august/trunk/util/openlayers-proxy.jsp?url=";
+
+    var map, osm, vMap;
+    var vSat , vHybrid, vGray, vMidnight;
+    var selectedGName='';
+    var selectedWPName ='';
+    var selectElementCode ='';
+    var wfsBasinMerge;
+    var process_arr=[];
+    var clientip;
+    var href = window.location.href;
+    var queryarr = href.split('?');
+    var wfs_NDG_QWP, wfs_NDG_QCTP, wfs_NDG_QCP, wfs_NDG_WOP;
+    var wfs_GovElement;
+    var runid ="";
+    function setUI(){
+        $('#menu').BootSideMenu({
+            side:"left", // left or right
+            autoClose:true // auto close when page loads
+        });
+    }
+/*상태바 변경 및 grm 상태 메세지 */
+    function getGrmStatus(){
+        ajaxCall(proxyUrl + encodeURIComponent( getGrmStatusService )  , function(xml){
+            var msg = $(xml).find("Memo").text();
+            runid = $(xml).find("runid").text();
+            //모니터링 프로세스의 수가 0 이라면 프로그레스바 non-active
+            msg = msg +" 최종 분석중 runid =" + runid;
+            if ( msg.indexOf('0')>-1)
+              $('#progbar').removeClass('active')
+            else
+              $('#progbar').addClass('active')
+            // $('#grmstatus').html(msg);
+        } );
+    }
+/*grm이 현재 진행상황*/
+    function getGrmRunningStatus(){
+        ajaxCall(proxyUrl + encodeURIComponent( getGrmRunningStatusService )  , function(xml){
+            var status = $(xml).find("Status").text();
+            var timetag = $(xml).find("TimeTag").text();
+            var userip = $(xml).find("ClientIP").text();
+            var startdate  = $(xml).find("StartDate").text();
+            var html ="";
+            if ( status =="true")
+            {
+                html= startdate  +" 분석중( 분석요청시간 - "+ timetag + ")" ;
+                $('#progbar').addClass('active');
+
+                setInterval(function(){
+                    /*
+                    2018.09.19 반복 호출 구간
+                    getToltalAreaProcessinfo();
+                    setAlertArea() ;
+                    setMenu();
+                    */
+                }, 5000);
+
+            }
+            else{
+
+                html="대기중";
+            }
+
+            $('#grmrunningstatus').html(html);
+        } );
+    }
+
+    function setMenu(){
+/*
+            var processtablehtml ='';
+            var lasthtml = '';
+            $('#processtablehtml').html('');
+
+            for ( var i = 0 ; i< process_arr.length ; i++){
+                var no = i+1;
+                if ( process_arr[i].namedisplay == '낙동강본류유역')
+                    lasthtml ='<tr><td>'+no+'<td  style="padding :8px 3px 8px 3px">'+process_arr[i].namedisplay+'<td style="padding :8px 3px 8px 3px">'+ process_arr[i].time_last2+'<td style="padding :8px 3px 8px 3px">'+ process_arr[i].leveltitle+'</tr>';
+                else
+                    processtablehtml +='<tr><td>'+no+'<td style="padding :8px 3px 8px 3px">'+process_arr[i].namedisplay+'<td style="padding :8px 3px 8px 3px">'+ process_arr[i].time_last2+'<td style="padding :8px 3px 8px 3px">'+ process_arr[i].leveltitle+'</tr>';
+
+            }
+            processtablehtml += lasthtml ;
+
+            $('#processtablehtml').html( processtablehtml);
+            */
+      }
+
+    $(document).ready(function(){
+        $("#date").val("2017-07-15");
+        $("#time").val("00:00:00");
+        setUI();
+        getGrmStatus();
+        getGrmRunningStatus();
+/*상태바 변경 및 grm 상태 메세지 */
+    function getGrmStatus(){
+        ajaxCall(proxyUrl + encodeURIComponent( getGrmStatusService )  , function(xml){
+            var msg = $(xml).find("Memo").text();
+            runid = $(xml).find("runid").text();
+            //모니터링 프로세스의 수가 0 이라면 프로그레스바 non-active
+            msg = msg +" 최종 분석중 runid =" + runid;
+            if ( msg.indexOf('0')>-1)
+              $('#progbar').removeClass('active')
+            else
+              $('#progbar').addClass('active')
+            // $('#grmstatus').html(msg);
+        } );
+    }
+
+
+        $('#stop').click(function(){
+            ajaxCall(proxyUrl + encodeURIComponent( stopService+'clientip='+clientip)  , stopProcess);
+        });
+
+        $('#grmmonitorchedk').click( function(){
+                /* 2015.05.17 프로세스 진행상황 조회 전에 모니터링 상태 조회 한다. */
+            $.ajax({
+                type: 'get'
+                , data: "xml"
+                , url :  proxyUrl + encodeURIComponent( azure_webservice  + "/checkMonitorProcess"  )
+                , success: function( data){
+                    var isMonitorWorking = $(data).find("boolean").text();
+                    if ( isMonitorWorking == 'true' )
+                    {
+                        alert('현재 Azure 서버의 GRM 모니터링 시스템이 정상적으로 동작중');
+                        getGrmStatus(); //모니터링 프로세스 진행상황 조회
+                    }
+                    else
+                    {
+                        alert('현재 Azure 서버의 GRM 모니터링 시스템이 정지상태입니다. 확인하세요');
+
+                    }
+
+                }
+                , error: function(xhr, status, error) { alert(error); }
+            });
+         });
+
+        $("#parameterSetting").click(function(){
+            var settingUrl = "setting.html";
+            var w = 1900;
+            var h = 950;
+            var left =20; // (screen.width/2)-(w/2);
+            var top = 20; //( screen.availHeight/2)-(h/2)+30;
+
+            var title = 'info';
+             var w =  window.open(settingUrl, "매개변수수정", 'toolbar=no, location=no, directories=no, status=no, '
+            + 'menubar=no, scrollbars=yes, resizable=yes, copyhistory=no, width=' + w
+            + ', height=' + h + ', top=' + top + ', left=' + left);
+        });
+
+        $("#viewHistory").click(function(){
+            window.open("hdefault.html");
+        });
+        $('#stop').click(function(){
+                ajaxCall(proxyUrl + encodeURIComponent( stopService+'clientip='+clientip)  , stopProcess);
+        });
+
+        $('#start').click(function(){
+            if ($('input:text').val().length == 0) {
+                $(this).parents('p').addClass('warning');
+            }
+            var querydate  =$('#date').val().replace(/-/ig, '') + $('#time').val().replace(/:/ig, '');
+
+            //querydate="20170715000000";
+
+
+            if ( querydate.length != 14 ) {
+                alertPopup('날짜를 정확히 입력하세요');
+                return false;
+            }
+            //ajaxCall(proxyUrl + encodeURIComponent( startService + 'sdate='+querydate.substring(0, 12) +'&clientip='+clientip) , startProcess );
+
+            /* 20161127 모니터 살았는지 확인하고  시작 시키도록 수정. */
+            $.ajax({
+                type: 'get'
+                , data: "xml"
+                , url :  proxyUrl + encodeURIComponent( azure_webservice  + "/checkMonitorProcess"  )
+                , success: function( data){
+                    var isMonitorWorking = $(data).find("boolean").text();
+                    if ( isMonitorWorking != 'true' )
+                    {
+                        alert('현재 Azure 서버의 GRM 모니터링 시스템이 정지상태입니다. 확인하세요');
+                        return;
+                    }
+                    else {
+                        ajaxCall(proxyUrl + encodeURIComponent( startService + 'sdate='+querydate.substring(0, 12) +'&clientip='+clientip) , startProcess );
+                    }
+                }
+                , error: function(xhr, status, error) { alert(error); }
+            });
+        });
+
+        function startProcess(xml ){
+            var retValue =  $(xml).find("string").text();
+            var arrRetValue = retValue.split("$");
+            if ( arrRetValue[0] == '성공' )
+            {
+
+                runid = arrRetValue[1];
+                alertPopup('GRM 모듈을 시작합니다.' + runid);
+
+                //2016-06-30 화면 초기 로딩, 시작버튼 누른 경우에만1회 호출하는것으로 수정한다. setTimeout(  getGrmStatus(), 2000);
+                getGrmRunningStatus();
+            }
+            else
+                alertPopup('GRM 모듈 가동 실패' + retValue);
+        }
+
+        function stopProcess(xml ){
+            var result = $(xml).find("boolean").text();
+            if ( result )
+            {
+                alertPopup('GRM 모듈을 종료합니다.');
+                ////2016-06-30 화면 초기 로딩, 시작버튼 누른 경우에만1회 호출하는것으로 수정한다.   setTimeout(  getGrmStatus(), 2000);
+                $('#progbar').removeClass('active')
+                getGrmStatus();
+                getGrmRunningStatus();
+            }
+            else
+                alertPopup('GRM 모듈종료 실패 ');
+        }
+     });
+
+
+    function init()
+    {
+        var option = {
+            controls: [
+            new OpenLayers.Control.Attribution()
+            ],
+            projection: new OpenLayers.Projection( defautProjection ),
+            displayProjection: new OpenLayers.Projection( displayProjection ),
+            numZoomLevels:15
+        };
+
+        map = new OpenLayers.Map("map", option);
+        osm = new OpenLayers.Layer.OSM();
+
+        vMap = new vworld.Layers.Base('브이월드');
+        vSAT = new vworld.Layers.Satellite('브이월드(영상)');
+        vHybrid = new vworld.Layers.Hybrid('브이월드(영상용 라벨)');
+        vGray = new vworld.Layers.Gray("브이월드(Gray)");
+        vMidnight = new vworld.Layers.Midnight("브이월드(Midnight)");
+
+        if (vMap != null) { map.addLayer(vMap) ;}
+        if (vSAT != null) {map.addLayer(vSAT);};
+        if (vHybrid != null) {map.addLayer(vHybrid);}
+        if (vGray != null) {map.addLayer(vGray);}
+        if (vMidnight != null) {map.addLayer(vMidnight);}
+
+        map.addLayer(osm);
+
+        vHybrid.setVisibility(false);
+
+        var switcherControl = new OpenLayers.Control.LayerSwitcher();
+        map.addControl(switcherControl);
+        map.addControl(new OpenLayers.Control.Navigation());
+        map.addControl(new OpenLayers.Control.Scale());
+        map.addControl(new OpenLayers.Control.ScaleLine());
+        map.addControl(new OpenLayers.Control.PanZoomBar());
+        map.addControl(new OpenLayers.Control.MousePosition());
+
+        //var gdLayer  = createWmsLayer( "GoldenT:GD_WatchPoint");
+
+        //var ngdLayer  = createWmsLayer( "GoldenT:ND500_Watchpoint_Grid"); //낙동강 500 격자 생략 2018/07/09
+        //map.addLayer ( ngdLayer );
+        //var admin_boundary_layer = createWmsLayeWithAlias("행정구역_TL_SCCO_SIG_TMgrs80_5186", "GoldenT:TL_SCCO_SIG_TMgrs80_5186");
+
+        //map.addLayer ( gdLayer );
+        //map.addLayer( admin_boundary_layer          );
+/*
+wms layer  호출 생략
+        var wms_ndg_qwp, wms_ndg_twp, wms_ndg_qctp, wms_ndg_qcp ,wms_ndg_wop ;
+
+        wms_ndg_qwp = createWmsLayeWithAlias("GoldenT:NDG_QWP", "GoldenT:NDG_WatchPoint_5186","QWP=1");
+        wms_ndg_twp= createWmsLayeWithAlias("GoldenT:NDG_TWP", "GoldenT:NDG_WatchPoint_5186","TWP=1");
+        wms_ndg_qctp= createWmsLayeWithAlias("GoldenT:NDG_QCTP", "GoldenT:NDG_WatchPoint_5186","QCTP=1");
+        wms_ndg_qcp= createWmsLayeWithAlias("GoldenT:NDG_QCP", "GoldenT:NDG_WatchPoint_5186","QCP=1");
+        wms_ndg_wop= createWmsLayeWithAlias("GoldenT:NDG_WOP", "GoldenT:NDG_WatchPoint_5186","WOP=1");
+
+        wms_ndg_qwp = createWmsLayeWithAlias("GoldenT:NDG_QWP", "GoldenT:NDG_WatchPoint_QWP");
+        wms_ndg_twp = createWmsLayeWithAlias("GoldenT:NDG_TWP", "GoldenT:NDG_WatchPoint_TWP");
+        wms_ndg_qctp = createWmsLayeWithAlias("GoldenT:NDG_QCTP", "GoldenT:NDG_WatchPoint_QCTP");
+        wms_ndg_qcp = createWmsLayeWithAlias("GoldenT:NDG_QCP", "GoldenT:NDG_WatchPoint_QCP");
+        wms_ndg_wop = createWmsLayeWithAlias("GoldenT:NDG_WOP", "GoldenT:NDG_WatchPoint_WOP");
+*/
+/* 추가 */
+
+        //wfsNDGWatchPoint = createWfsmap_new( 'GoldenT:NDG_WatchPoint_5186', map );
+        wfs_NDG_QWP = createWfsmap_new( 'GoldenT:wfs_NDG_QWP', map ); //조건 QWP=1 LABEL : Name
+        // wfs_NDG_QCTP = createWfsmap_new( 'GoldenT:wfs_NDG_QCTP', map ); //조건 qctp=1 LABEL : Name
+        // wfs_NDG_QCP = createWfsmap_new( 'GoldenT:wfs_NDG_QCP', map ); //조건 QCP=1 LABEL = GName
+        // wfs_NDG_WOP = createWfsmap_new( 'GoldenT:wfs_NDG_WOP', map ); //조건 WOP=1  LABEL : WOPID
+
+
+
+        var gstyleGvoeElement = new OpenLayers.StyleMap({
+           "default":new OpenLayers.Style(OpenLayers.Util.applyDefaults({
+                strokeColor: "#0000FF",
+                strokeOpacity: 1,
+                strokeWidth: 3,
+                fillColor: "#00FF00",
+                fillOpacity: 1,
+                pointRadius: 5,
+            }, OpenLayers.Feature.Vector.style["default"])),
+           "select":new OpenLayers.Style(OpenLayers.Util.applyDefaults({
+                                fillColor:"blue",
+                                graphicName:"square",
+                                rotation:90,
+                                pointRadius:15
+                            }, OpenLayers.Feature.Vector.style["select"]))
+        });
+
+
+
+        wfs_GovElement = createWfsmap_new( 'GoldenT:GovElement', map ,"");
+
+
+            // getFeatures (wfs_NDG_QCTP ,'GoldenT:NDG_WatchPoint_5186' , 'QCTP=1');
+            // getFeatures (wfs_NDG_QCP ,'GoldenT:NDG_WatchPoint_5186' , 'QCP=1');
+            // getFeatures (wfs_NDG_WOP ,'GoldenT:NDG_WatchPoint_5186' , 'WOP=1');
+
+
+
+        getFeatures (wfs_GovElement ,'GoldenT:TL_SCCO_SIG_TMgrs80_5186_1001' ,"basinZone='낙동강'");
+        getFeatures (wfs_NDG_QWP ,'GoldenT:NDG_WatchPoint_5186' , 'QWP=1');
+
+        function getFeatures(_Layername, _typename , _filter )
+        {
+
+            var reqData  = {
+                service :'wfs',
+                version : '1.1.0',
+                request : 'GetFeature',
+                outputformat: 'json',
+                srsName :  defautProjection ,
+                typeName : _typename
+             };
+
+             if ( _filter != null && _filter !=""){
+                reqData.CQL_FILTER = _filter;
+             }
+            var reqUrl = createRequestUrl( wfsUrl, reqData );
+
+            ajaxCall( reqUrl , wfsNdgResult , 'json' );
+            function wfsNdgResult( data){
+                    var geojson = new OpenLayers.Format.GeoJSON();
+                    map.addLayer(_Layername );
+                    _Layername.addFeatures(geojson.read(data));
+            }
+        }
+
+
+
+        /* wfs_GoldenT:GD_WatchPoint 시작 */
+        var wfsBasinMerge = createWfsmap( 'wfs_GoldenT:GD_WatchPoint', map );
+
+        var gdBasindata  = {
+            service :'wfs',
+            version : '1.1.0',
+            request : 'GetFeature',
+            outputformat: 'json',
+            srsName :  defautProjection ,
+            typeName :'GoldenT:GD_WatchPoint'
+        };
+
+        reqUrl = createRequestUrl( wfsUrl, gdBasindata );
+
+        ajaxCall(  reqUrl , wfsBasinMergeResult , 'json' );
+
+        function wfsBasinMergeResult( data){
+                var geojson = new OpenLayers.Format.GeoJSON();
+                map.addLayer(wfsBasinMerge );
+                    wfsBasinMerge.addFeatures(geojson.read(data));
+        }
+/* select control 초기화 */
+        selectControl_QWP = new OpenLayers.Control.SelectFeature (
+                wfs_NDG_QWP, {
+                clickout: true,
+                toggle: true,
+                multiple: false,
+                //hover: false,
+                toggleKey: "ctrlKey", // ctrl key removes from selection
+                multipleKey: "shiftKey" // shift key adds to selection
+                }
+        );
+
+/*
+        selectControl_QCTP = new OpenLayers.Control.SelectFeature (
+                wfs_NDG_QCTP, {
+                clickout: true,
+                toggle: true,
+                multiple: false,
+                //hover: false,
+                toggleKey: "ctrlKey", // ctrl key removes from selection
+                multipleKey: "shiftKey" // shift key adds to selection
+                }
+        );
+
+         selectControl_QCP = new OpenLayers.Control.SelectFeature (
+                wfs_NDG_QCP, {
+                clickout: true,
+                toggle: true,
+                multiple: false,
+                //hover: false,
+                toggleKey: "ctrlKey", // ctrl key removes from selection
+                multipleKey: "shiftKey" // shift key adds to selection
+                }
+        );
+
+        selectControl_WOP = new OpenLayers.Control.SelectFeature (
+                wfs_NDG_WOP, {
+                clickout: true,
+                toggle: true,
+                multiple: false,
+                //hover: false,
+                toggleKey: "ctrlKey", // ctrl key removes from selection
+                multipleKey: "shiftKey" // shift key adds to selection
+                }
+        );
+*/
+         selectControl_GovElement = new OpenLayers.Control.SelectFeature (
+                wfs_GovElement, {
+                clickout: true,
+                toggle: true,
+                multiple: false,
+                //hover: false,
+                toggleKey: "ctrlKey", // ctrl key removes from selection
+                multipleKey: "shiftKey" // shift key adds to selection
+                }
+        );
+
+        map.addControl(selectControl_QWP);
+        // map.addControl(selectControl_QCTP);
+        // map.addControl(selectControl_QCP);
+        // map.addControl(selectControl_WOP);
+        map.addControl(selectControl_GovElement);
+        selectControl_QWP.activate();
+        // selectControl_QCTP.activate();
+        // selectControl_QCP.activate();
+        // selectControl_WOP.activate();
+        selectControl_GovElement.activate();
+
+
+
+
+/*
+        wfs_NDG_QWP.events.on({
+                "featureselected": function(e) {
+                        selectedFid =e.feature.fid ;
+                        selectedWPName =e.feature.attributes.NAME ;
+                        $('#selectedWPName').html(selectedWPName );
+                        showInfo(); //
+                }
+            });
+
+      wfs_NDG_QCTP.events.on({
+                "featureselected": function(e) {
+                        selectedFid =e.feature.fid ;
+                        selectedWPName =e.feature.attributes.NAME ;
+                        $('#selectedWPName').html(selectedWPName );
+                        showInfo(); //
+                }
+            });
+       wfs_NDG_QCP.events.on({
+                "featureselected": function(e) {
+                        selectedFid =e.feature.fid ;
+                        selectedWPName =e.feature.attributes.NAME ;
+                        $('#selectedWPName').html(selectedWPName );
+                        showInfo(); //
+                }
+            });
+*/
+        wfs_NDG_QWP.events.on({
+                "featureselected": function(e) {
+                        //selectedFid =e.feature.fid ;
+                        selectedWPName =e.feature.attributes.NAME ;
+                        selectedGName = e.feature.attributes.GName;
+
+                        showInfo(); //
+                }
+            });
+         wfs_GovElement.events.on({
+                "featureselected": function(e) {
+                        sig_cd = e.feature.attributes.SIG_CD;
+                        sig_eng_nm = e.feature.attributes.SIG_ENG_NM;
+                        sig_kor_nm = e.feature.attributes.SIG_KOR_NM;
+
+
+                        showGovElementInfo(); //
+                }
+            });
+
+         function popupMsg ( _cellid )
+        {
+            alert( _cellid );
+        }
+        //map.zoomToExtent(new OpenLayers.Bounds(bounds).transform( displayProjection , map.getProjection()), true);
+        map.zoomToExtent(new OpenLayers.Bounds([127.72557415770616,34.78669057044466,129.47315382078028,37.10797245996783]).transform( displayProjection , map.getProjection()), true);
+             $('#search').show();
+
+        map.events.register('zoomend', this, function (event) {
+           var zLevel = map.getZoom();
+           var sc = map.getScale();
+           document.getElementById('MatrikelOutput').innerHTML = "Level: " + zLevel + " Scale: " + sc;
+        });
+
+        function showInfo()
+        {
+            var w = 1850;
+            var h = 650;
+            var left =20; // (screen.width/2)-(w/2);
+            var top = 20; //( screen.availHeight/2)-(h/2)+30;
+            var url = "wpdetail.html";
+            var title = 'info';
+            url = url +'?gname='+ selectedGName + '&runid=' + runid +'&wpname='+selectedWPName ;
+
+            $('.modal-title').text(selectedWPName);
+
+            var titleArea = selectedWPName;
+            var w =  window.open(url, titleArea, 'toolbar=no, location=no, directories=no, status=no, '
+            + 'menubar=no, scrollbars=yes, resizable=yes, copyhistory=no, width=' + w
+            + ', height=' + h + ', top=' + top + ', left=' + left);
+        }
+
+         function showGovElementInfo()
+        {
+            var w = 1850;
+            var h = 950;
+            var left =20; // (screen.width/2)-(w/2);
+            var top = 20; //( screen.availHeight/2)-(h/2)+30;
+            var url = "relementdetail.html";
+            var title = 'info';
+            url = url +'?sig_cd='+ sig_cd +'&runid=' + runid +'&sig_kor_nm='+sig_kor_nm;
+
+            $('.modal-title').text(selectedWPName);
+
+            var titleArea = selectedWPName;
+            var w =  window.open(url, titleArea, 'toolbar=no, location=no, directories=no, status=no, '
+            + 'menubar=no, scrollbars=yes, resizable=yes, copyhistory=no, width=' + w
+            + ', height=' + h + ', top=' + top + ', left=' + left);
+        }
+
+/*
+GoldenT:ND500_Watchpoint_Grid 추가
+*/
+        //var wfsNDGWatchPoint = createWfsmap( 'wfs_GoldenT:NDG_WatchPoint', map );
+
+/*
+2018.07.19 낙동강 그리드건 문제 해제
+        var styleNDGWatchPoint = new OpenLayers.StyleMap({
+                "default": new OpenLayers.Style( OpenLayers.Util.applyDefaults({
+                    fillColor : "blue",
+                    strokeColor :"gray",
+                    graphicName :"square",
+                    pointRadius : 15
+                }, OpenLayers.Feature.Vector.style["default"])),
+                "select" : new OpenLayers.Style ( OpenLayers.Util.applyDefaults({
+                    graphicName :"square",
+                    pointRadius : 15
+                }, OpenLayers.Feature.Vector.style["select"]))
+        });
+        var wfsNDGWatchPoint = new OpenLayers.Layer.Vector("wfs_GoldenT:NDG_WatchPoint",{
+            styleMap : styleNDGWatchPoint
+            });
+
+        var data  = {
+            service :'wfs',
+            version : '1.1.0',
+            request : 'GetFeature',
+            outputformat: 'json',
+            srsName :  defautProjection ,
+            typeName :'GoldenT:ND500_Watchpoint_Grid'
+        };
+
+        reqUrl = createRequestUrl( wfsUrl, data );
+
+        ajaxCall(
+            reqUrl
+            , function(data ){
+
+                var geojson = new OpenLayers.Format.GeoJSON();
+                map.addLayer(wfsNDGWatchPoint );
+                wfsNDGWatchPoint.addFeatures(geojson.read(data));
+
+            }
+            , 'json'
+        );
+
+       wfsNDGWatchPoint.events.on({
+            "featureselected": function(e) {
+                selectedFid =e.feature.fid ;
+                selectedAreaCode =e.feature.attributes.Cell_ID ;
+                popupMsg(  e.feature.attributes.Cell_ID )  ;
+            },
+
+            "featureunselected": function(e) {
+
+                //var level = getLevel (  e.feature.fid);
+                //  if ( level != 0 )
+                //  redraw(  e.feature.fid , level );
+            }
+        });
+
+
+*/
+
+     }
+
+</script>
+
+</head>
+<body onload="init()">
+<div id="selectedWPName" style="display:none"></div>
+<div id="selectedGName" style="display:none"></div>
+<div id="sig_cd" style="display:none"></div>
+<div id="sig_kor_nm" style="display:none"></div>
+<div id="runid" style="display:none"></div>
+<div id="search">
+<div class="well custom-well-small" style="align:center;">
+    <input id="date" class="date input_mod"  type="text" placeholder="yyyy-mm-dd" style="text-align:center;" size="12">-
+    <input id="time" class="time input_mod"  type="text" placeholder="hh:mm:ss" style="text-align:center;" size="12">
+    <button type="button" class="btn btn-danger btn_mod" id="start"> <span class="glyphicon glyphicon-play" aria-hidden="true"></span></button>
+    <button type="button" class="btn btn-primary btn_mod" id="stop"><span class="glyphicon glyphicon-stop" aria-hidden="true"></span></button>
+
+    <span class="label label-default" id="grmrunningstatus"></span>
+      <div class="progress">
+  <div id="progbar" class="progress-bar progress-bar-info progress-bar-striped " role="progressbar" aria-valuenow="100" aria-valuemin="100" aria-valuemax="100" style="width: 100%">
+  <span id="grmstatus"> </span>
+
+  </div>
+[ 현재 연결된 서버 ]  <div id="usingserver" style="font-size:130%" ></div><button id="grmmonitorchedk">GRM 모니터 확인</button>
+</div>
+</div>
+</div>
+
+<!--menu start -->
+<div id="menu" style="z-index:9999">
+    <div class="user">
+        <!-- <img src="http://image.priceprice.k-img.com/ph/images/common/face_japan_01.gif" alt="Esempio" class="img-thumbnail"> -->
+        <button type="button" class="btn btn-primary btn_mod" id="parameterSetting">매개변수조회</button>
+          <button type="button" class="btn btn-primary btn_mod" id="viewHistory">이력조회모드</button>
+        <div class="well">행정구역별 진행시간</div>
+        <table style="margin:10px" cellpadding="10">
+    <tr>
+    <td style="background-color: #0000ff;width:20px;">&nbsp;<td>관심
+    <td style="background-color: #ffff00;width:20px;">&nbsp;<td>주의
+    <td style="background-color: #ff8000;width:20px;">&nbsp;<td>경계
+    <td style="background-color: #ff0000;width:20px;">&nbsp;<td>심각
+    </tr></table>
+    </div>
+
+    <table class="table  table-bordered">
+        <tr><td style="padding :8px 3px 8px 3px">행정구역</td><td  style="padding :8px 3px 8px 3px">진행시간</td><td  style="padding :8px 3px 8px 3px">상태</td></tr>
+        <tbody id="processtablehtml">
+        </tbody>
+    </table>
+
+    </div>
+    </div>
+</div>
+<!--menu end -->
+
+ <div id="map" class="smallmap"></div>
+ <div id="MatrikelOutput"></div>
+ <script>
+
+$('.time').timepicker({
+'showDuration': true,
+'timeFormat': 'H:i:s'
+});
+
+$('.date').datepicker({
+//'format': 'm/d/yyyy',
+'format': 'yyyy-mm-dd',
+'autoclose': true
+
+});
+
+$('.date').click(function(){
+    $('.datepicker').css('z-index', 5000);
+});
+
+
+$('.time').click(function(){
+    $('.timepicker').css('z-index', 5000);
+});
+ </script>
+ </body>
+</html>

@@ -1,0 +1,399 @@
+/**
+ * CSS Reset
+ * From Blueprint reset.css
+ * http://blueprintcss.googlecode.com
+ */
+html, body, div, span, object, iframe, h1, h2, h3, h4, h5, h6, p, blockquote, pre, a, abbr, acronym, address, code, del, dfn, em, img, q, dl, dt, dd, fieldset, form, label, legend, table, caption, tbody, tfoot, thead, tr, th, td {margin:0;padding:0;border:0;font-weight:inherit;font-style:inherit;font-size:100%;font-family:inherit;vertical-align:baseline;}
+body {line-height:1.5;}
+table {
+  border-collapse:separate;border-spacing:0;
+  font-size:85%;
+  align:center;
+}
+
+.table tbody>tr>td{
+    vertical-align: middle;
+    text-align:center;
+}
+caption, th, td {text-align:left;font-weight:normal;}
+td {text-align:center;font-weight:normal;}
+table, td, th {vertical-align:middle;}
+blockquote:before, blockquote:after, q:before, q:after {content:"";}
+blockquote, q {quotes:"" "";}
+a img {border:none;}
+
+/**
+ * Basic Typography
+ */
+ html{
+       width:100%;
+    height:100%;
+ }
+body {
+    font-family: "Lucida Grande", Verdana, Geneva, Lucida, Arial, Helvetica, sans-serif;
+    font-size: 80%;
+    color: #222;
+    background: #fff;
+    /*margin: 1em 1.5em;*/
+    width:100%;
+    height:100%;
+}
+pre, code {
+    margin: 1.5em 0;
+    white-space: pre;
+}
+pre, code {
+    font: 1em 'andale mono', 'lucida console', monospace;
+    line-height:1.5;
+}
+a[href] {
+    color: #436976;
+    background-color: transparent;
+}/*
+h1, h2, h3, h4, h5, h6 {
+    color: #003a6b;
+    background-color: transparent;
+    font: 100% 'Lucida Grande', Verdana, Geneva, Lucida, Arial, Helvetica, sans-serif;
+    margin: 0;
+    padding-top: 0.5em;
+}
+h1 {
+    font-size: 130%;
+    margin-bottom: 0.5em;
+    border-bottom: 1px solid #fcb100;
+}
+h2 {
+    font-size: 120%;
+    margin-bottom: 0.5em;
+    border-bottom: 1px solid #aaa;
+}
+h3 {
+    font-size: 110%;
+    margin-bottom: 0.5em;
+    text-decoration: underline;
+}
+h4 {
+    font-size: 100%;
+    font-weight: bold;
+}
+h5 {
+    font-size: 100%;
+    font-weight: bold;
+}
+h6 {
+    font-size: 80%;
+    font-weight: bold;
+}*/
+
+.olControlAttribution {
+    bottom: 5px;
+}
+
+/**
+ * Map Examples Specific
+ */
+.smallmap {
+   /*width: 512px;
+   height: 256px;*/
+   width: 100%;
+   height: 100%;
+     border: 1px solid #ccc;
+
+}
+#tags {
+    display: none;
+}
+
+#docs p {
+    margin-bottom: 0.5em;
+}
+/* mobile specific */
+@media only screen and (max-width: 600px) {
+    body {
+        height           : 100%;
+        margin           : 0;
+        padding          : 0;
+        width            : 100%;
+    }
+    #map {
+        background : #7391ad;
+        width      : 100%;
+    }
+    #map {
+        border : 0;
+        height : 250px;
+    }
+    #title {
+        font-size   : 1.3em;
+        line-height : 2em;
+        text-indent : 1em;
+        margin      : 0;
+        padding     : 0;
+    }
+    #docs {
+        bottom     : 0;
+        padding    : 1em;
+    }
+    #shortdesc {
+        color      : #aaa;
+        font-size  : 0.8em;
+        padding    : 1em;
+        text-align : right;
+    }
+    #tags {
+        display : none;
+    }
+}
+@media only screen and (orientation: landscape) and (max-width: 600px) {
+    #shortdesc {
+       float: right;
+       width: 25%;
+    }
+    #map {
+        width: 70%;
+    }
+    #docs {
+        font-size: 12px;
+    }
+}
+body {
+    -webkit-text-size-adjust: none;
+}
+
+.olControlLayerSwitcher
+    {
+        width: 30em;/*
+        position: absolute;
+        top: 25px;
+        right: 0;
+
+        font-family: sans-serif;
+        font-weight: bold;
+        margin-top: 3px;
+        margin-left: 3px;
+        margin-bottom: 3px;
+        font-size: smaller;
+        color: white;
+        background-color: transparent;
+        z-index: 10000;*/
+    }
+    .olControlLayerSwitcher .layersDiv
+    {
+        /*padding-top: 5px;
+        padding-left: 10px;
+        padding-bottom: 5px;
+        padding-right: 10px;
+        background-color: #121212;*/
+    }
+
+  #wrap {
+    height : 100%;
+    min-height:100%;
+    width :100%;
+  }
+
+  #nav {
+      line-height:30px;
+      /*background-color:#eeeeee;*/
+      height:100%;
+      min-height:100%;
+      width:25%;
+      float:left;
+      padding:5px;
+      overflow:auto;
+
+
+
+  }
+
+  #section {
+      width:70%;
+      float:left;
+      padding:10px;
+      height:100%;
+      min-height:100%;
+       overflow:auto;
+  }
+
+  #bar{
+      margin-left:20px;
+    }
+    #bar img, #line img{
+      padding: 4px 3px 0px 3px;
+    }
+  .panel-height {
+       height: 450px; / change according to your requirement/
+       overflow-y: scroll;
+}
+.table-fixed{
+  font-size : 90%;
+
+}
+.table-fixed thead {
+  width: 97%;
+}
+.table-fixed tbody {
+  height: 340px;
+  overflow-y: auto;
+  width: 100%;
+}
+.table-fixed thead, .table-fixed tbody, .table-fixed tr, .table-fixed td, .table-fixed th {
+  display: block;
+}
+.table-fixed tbody td, .table-fixed thead > tr> th {
+  float: left;
+  border-bottom-width: 0;
+  text-align:center;
+}
+ .fixed-panel {
+          min-height: 10;
+          max-height: 510;
+      /*    overflow-y: scroll;
+          height:410px;*/
+    }
+#table_container{
+  min-height: 10;
+  max-height: 510;
+   overflow-y: scroll;
+    height:410px;
+}
+.form-group .form-control{
+  height:23px;
+  text-align: center;
+  padding :0px;
+  font-size: 85%;
+}
+
+.legend1 {
+  width: 100px;
+
+}
+.legend2 {
+  width: 80px;
+}
+.legend3 {
+  width: 180px;
+}
+fieldset {
+  border:1px green solid;
+  margin-bottom: 8px;
+  padding-bottom:10px;
+}
+fieldset div {
+  /*margin-bottom: 2px;*/
+  border : solid 1px white;
+
+}
+#search {
+  display:none;
+  position: absolute;
+  top:10px;
+  left:50px;
+  z-index:1000;
+  font-size: 90%;
+   width: 750px;
+
+}
+.well.custom-well-small {
+ <!--width: 380px;  -->
+ width: 650px;
+ margin: 0  ;
+ padding: 5px;
+
+}
+
+.input_mod {
+  margin : 5px;
+  height : 25px;
+}
+.btn_mod {
+  height : 25px;
+  padding-top : 1px;
+  padding-bottom : 1px;
+  margin : 5px;
+  font-size: 95%;
+}
+
+.progress {
+  position: relative;
+  margin-bottom: 0px;
+}
+.progress span {
+    position: absolute;
+    display: block;
+    width: 100%;
+    color: black;
+}
+/*
+.legend {
+  position: relative;
+  margin-bottom: 0px;
+   padding: 5px;
+}
+
+.legend2 {
+
+  position: absolute;
+  top:10px;
+  left:50px;
+  z-index:1000;
+  font-size: 90%;
+*/
+
+#legend{
+    position:absolute;
+    right: 50px;
+    bottom:100px;
+    z-index:1000;
+    font-size: 105%;
+    font-weight:bold;
+   /* width:100px;
+    height:100px;
+    background-color:#FFFFFF;*/
+
+}*/
+th { height:25px; width:80px; text-align: center;}
+
+
+#setting {
+   font-size: 95%;
+     text-align:center;
+}
+
+#settinglist {
+   font-size: 95%;
+   text-align:center;
+}
+.form-control2{
+  height:20px;
+}
+.table tbody>tr>td>input{
+     font-size:90%;   text-align:center;height:20px; }
+
+
+/*
+
+table thead tr{
+    display:block;
+}
+
+table th,table td{
+    width:100%;
+
+}
+
+
+table  tbody{
+  display:block;
+  height:380px;
+  overflow:auto;//set tbody to auto
+   width: 110%;
+}
+
+
+
+
+thead { display:block; background: #337ab7; margin:0px; cell-spacing:0px; left:0px; color:white; font-size:90%;}
+tbody { display:block; overflow:auto; height:450px; }
+th { height:25px; width:80px; text-align: center;}
+td { height:10px; width:80px;  margin:0px; cell-spacing:0px;text-align: center;}*/

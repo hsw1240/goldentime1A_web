@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>골든타임1A</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<script src="./js/jquery-1.11.2.js"></script>
+        <script src="./OpenLayers-2.13.1/lib/OpenLayers.js"></script>
+	<script src="./js/common.js"></script>
+	<script src="./js/util.js"></script>
+
+	<script src="./js/bootstrap.js"></script>
+	<script src="http://code.highcharts.com/stock/highstock.js"></script>
+	<script src="http://code.highcharts.com/stock/modules/exporting.js"></script>
+
+	<script src="js/theme.js"></script>
+
+	<link rel="stylesheet" href="./OpenLayers-2.13.1/theme/default/style.css" type="text/css">
+	<link rel="stylesheet" href="./bootstrap-3.3.5/css/bootstrap.css">
+	<link rel="stylesheet" href="./bootstrap-3.3.5/css/bootstrap-theme.min.css">
+
+	<link href="http://fonts.googleapis.com/css?family=Montserrat:400,700" rel="stylesheet" type="text/css">
+    <link href="http://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic" rel="stylesheet" type="text/css">
+
+
+	<link rel="stylesheet" href="./css/style.css" >
+	<script src="./js/showdata.js"></script>
+	<script src="./js/jquery.xml2json.js"></script>
+	<script src="./js/config.js"></script>
+		<!-- <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.0/css/bootstrap-toggle.min.css" rel="stylesheet"> -->
+			<link rel="stylesheet" href="./css/bootstrap-toggle.css" >
+	<script src="./js/bootstrap-toggle.js"></script>
+		<script src="./js/jquery.classypopup.js"></script>
+	<script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/jquery-ui.min.js"></script>
+
+	<link rel="stylesheet" type="text/css" href="./css/jquery.classypopup.css" />
+
+	<script>
+
+		//var sitecode = location.search.split('sitecode=')[1];
+		//var templocation = location.search.replace( '?' , '' );
+		//var queryHash = JSON.stringify( query_to_hash(location.search));
+
+
+		var map, osm, vMap;
+		var vSat , vHybrid;
+		var selectedWPName='' ;
+		var siteParameters;
+        var runid;
+
+
+		var urls = [];
+
+		urls.push( rainfallUrl);
+
+		var refreshTime = 100000000000000000000000000000; //1sec : 1000
+		var myRefresh = setInterval(function(){ myRefreshTimer() }, refreshTime);
+
+		function myRefreshTimer() {
+            myRefreshStopFunction();
+            return;
+		    drawImage();
+			callNext( urls, 0)	 ;
+
+
+			$('#fluxzoom').click(function(){
+				zoomImage('flux');
+			});
+			$('#saturationzoom').click(function(){
+				zoomImage('saturation')
+			});
+			$('#accumulationzoom').click(function(){
+				zoomImage('accumulation')
+			});
+			$('#rainfallzoom').click(function(){
+				zoomImage('rainfall')
+			});
+
+		}
+
+		function myRefreshStopFunction() {
+
+		    clearInterval(myRefresh);
+		}
+
+	    $(function() {
+		    $('#isrefesh').bootstrapToggle({
+	      		on: 'Auto Refresh' ,
+	      		off: 'Auto Refresh',
+	      		size : 'mini'
+	    	});
+	  	});
+
+	  	function startRefresh(){
+ 			myRefresh = setInterval(function(){ myRefreshTimer() }, refreshTime);
+	  	}
+/*
+		$(function() {
+    		$('#isrefresh').change(function() {
+      		if ( $(this).prop('checked'))
+				startRefresh();
+			else
+				myRefreshStopFunction();
+
+    		})
+  		});
+
+*/
+		function initPage() {
+			drawImage();
+			callNext( urls, 0);
+			//selectedWPName = $(parent.opener.document.getElementById('selectedWPName')).text() ;
+
+			$('#areaname').html( selectedWPName);
+			$('#imgModal').modal('hide');
+			$('#fluxzoom').click(function(){
+				zoomImage('flux');
+			});
+			$('#saturationzoom').click(function(){
+				zoomImage('saturation')
+			});
+			$('#accumulationzoom').click(function(){
+				zoomImage('accumulation')
+			});
+			$('#rainfallzoom').click(function(){
+				zoomImage('rainfall')
+			});
+		} //modify function end
+		$(document).ready(function(){
+			ajaxCall(proxyUrl + encodeURIComponent( getParametersService + 'sitecode='+selectedWPName ) , parseParameters );
+
+                        function parseParameters( xml )
+                        {
+                                $(xml).find("string").each(function() {
+                                        var xmlDoc = jQuery.parseXML($(this).text());
+                                        siteParameters  = $.xml2json(xmlDoc);
+                                        drawParametersTable();
+                                });
+                          }
+
+                        $('#modify').click(function()
+                        {
+                                alert('작업중');return;
+                                var wsid = $("#wsid").val();
+        			var inisat = $('#IniSaturation').val();
+        			var minSlopeChannel = $('#MinSlopeChBed').val();
+        			var roughnessChannel = $('#ChRoughness').val();
+        			var iniFlow = $('#IniFlow').val();
+        			var soilHydraulicCond = $('#CalCoefHydraulicK').val();
+        			var applyIniFlow = true;
+
+
+                                var minslopeof = $('#MinSlopeOF').val();
+                                var minchbasewidth = $("#MinChBaseWidth").val();
+                                var drystreamorder = $("#DryStreamOrder").val();
+                                var calcoeflcroughness = $("#CalCoefLCRoughness").val();
+                                var calcoefsoildepth = $("#CalCoefSoilDepth").val();
+                                var calcoefporosity = $("#CalCoefPorosity").val();
+                                var calcoefwfsuctionhead = $("#CalCoefWFSuctionHead").val();
+
+
+
+                                //2017.10.25 매개변수 모두 변경할 수 있도록 수정.
+
+        			var query  = 'sitecode='+sitecode+'&wsid='+wsid +'&inisat='+inisat +'&minSlopeChannel='+minSlopeChannel+'&roughnessChannel='+roughnessChannel+'&iniFlow='+iniFlow+'&soilHydraulicCond='+soilHydraulicCond+'&applyIniFlow=true' + '&minslopeof='+minslopeof +'&minchbasewidth='+minchbasewidth +'&drystreamorder='+drystreamorder+'&calcoeflcroughness='+calcoeflcroughness+'&calcoefsoildepth='+calcoefsoildepth+'&calcoefporosity='+calcoefporosity+'&calcoefwfsuctionhead='+calcoefwfsuctionhead                 ;
+
+
+
+
+
+        			ajaxCall ( proxyUrl + encodeURIComponent( setParameterService + query ), function( xml){
+        				var result = $(xml).find("boolean").text();
+        				if ( result )
+        					alertPopup('매개변수를 저장하였습니다. 변경된 매개변수에 대한 적용은 프로세스를 종료 후 재시작해주시기 바랍니다.');
+        				else
+        					alertPopup('매개변수 저장 중 문제가 발생하였습니다.');
+        				});
+        			} );
+
+				initPage();
+
+
+				$("input[name=refresh]").change(function() {
+					var radioValue = $(this).val();
+					refreshTime =radioValue;
+
+					if ( radioValue ==-1 )
+						myRefreshStopFunction();
+					else
+					{
+						myRefreshStopFunction();
+						//201808 ?? startRefresh();
+					}
+
+		      		});
+		              });
+
+
+
+
+		function startSetParameterService( xml ){
+
+			var result = $(xml).find("boolean").text();
+			if ( result )
+				alertPopup('매개변수를 저장하였습니다. 변경된 매개변수에 대한 적용은 프로세스를 종료 후 재시작해주시기 바랍니다.');
+			else
+				alertPopup('매개변수 저장 중 문제가 발생하였습니다.');
+		}
+
+
+</script>
+
+
+<script type="text/javascript">
+    jQuery(function ($) {
+        $('.panel-heading span.clickable').on("click", function (e) {
+            if ($(this).hasClass('panel-collapsed')) {
+                // expand the panel
+                $(this).parents('.panel').find('.panel-body').slideDown();
+                $(this).removeClass('panel-collapsed');
+                $(this).find('i').removeClass('glyphicon-chevron-down').addClass('glyphicon-chevron-up');
+            }
+            else {
+                // collapse the panel
+                $(this).parents('.panel').find('.panel-body').slideUp();
+                $(this).addClass('panel-collapsed');
+                $(this).find('i').removeClass('glyphicon-chevron-up').addClass('glyphicon-chevron-down');
+            }
+        });
+    });
+</script>
+
+
+</head>
+<body>
+<!--modal-->
+
+
+
+
+<div class="modal fade bs-example-modal-lg" id="imgModal" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+	<div class="modal-backdrop fade in" style="height: 100%;">
+	</div>
+  	<div class="modal-dialog modal-lg">
+    <div class="modal-content">
+    	<div class="modal-header" ><h4 class="modal-title"><div id="zoomtitle"></div></h4>
+	    	<button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+	      		<h4 class="modal-title" align="center"></h4>
+	    </div>
+		<div class="modal-body" style="width:100% ;height: 90%;">
+			<img class="img-responsive" id="zoomimg" >
+		</div>
+    </div>
+  </div>
+</div>
+<!-- modal-->
+<img src="img/load.gif" id="ajax_loading" style="position:absolute; z-index:9001; display:none; left:49%; top:49%;" />
+
+<!-- 강우 수위 조회-->
+<!-- Modal -->
+    <!-- <div class="well well-sm">    	 -->
+		<!-- top menu start-->
+<nav class="navbar navbar-default"  style="margin-bottom: 0px;">
+  <div class="container-fluid" >
+    <!-- Brand and toggle get grouped for better mobile display -->
+    <div class="navbar-header" >
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="#"><span id="areaname"></span></a>
+      <!-- <button id="test1">test1</button>
+      <button id="test2">test2</button>
+      <button id="test3">test3</button> -->
+    </div>
+
+    <!-- Collect the nav links, forms, and other content for toggling -->
+    <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1" style="">
+    <!-- <ul class="nav navbar-nav">
+        <li class="active"><a href="#">Link <span class="sr-only">(current)</span></a></li>
+        <li><a href="#">Link</a></li>
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Dropdown <span class="caret"></span></a>
+          <ul class="dropdown-menu">
+            <li><a href="#">Action</a></li>
+            <li><a href="#">Another action</a></li>
+            <li><a href="#">Something else here</a></li>
+            <li role="separator" class="divider"></li>
+            <li><a href="#">Separated link</a></li>
+            <li role="separator" class="divider"></li>
+            <li><a href="#">One more separated link</a></li>
+          </ul>
+        </li>
+      </ul> -->
+     <!--  <form class="navbar-form navbar-left" role="search">
+        <div class="form-group">
+          <input type="text" class="form-control" placeholder="Search">
+        </div>
+        <button type="submit" class="btn btn-default">Submit</button>
+      </form> -->
+
+           <form class="navbar-form navbar-right" role="search">
+        <!-- <div class="form-group">
+        	<input id="isrefresh" type="checkbox" data-toggle="toggle" data-on="auto Refresh" data-off="auto Refresh"  >
+        </div> -->
+
+        <label class="radio-inline"><input type="radio" name="refresh" value="-1" checked> Timer Off</label>
+		<label class="radio-inline"><input type="radio" name="refresh" value="1000"  > Auto (1 Sec) </label>
+		<label class="radio-inline"><input type="radio" name="refresh" value="10000" > Auto (10 Sec)</label>
+
+
+        </form>
+      </ul>
+    </div><!-- /.navbar-collapse -->
+  </div><!-- /.container-fluid -->
+</nav>
+
+
+		<!-- top menu end -->
+
+		<!-- <div class="alert alert-info" role="alert"><span  id="areaname"></span><input id="isrefresh" type="checkbox" data-toggle="toggle" data-on="auto Refresh" data-off="auto Refresh" checked ></div> -->
+
+
+	<!--model body-->
+<div class="modal-body" style="width:100% ;height: 90%;">
+	<div class="container"  style="width:100% ;height: 100%;">
+
+		<!-- image list area -->
+
+ 			<div class="row">
+ 				<div class="col-lg-3 col-mg-3">
+		 			<div class="panel panel-primary" >
+		 				<div class="panel-heading" style="padding: 5px 15px;"> <span class="glyphicon glyphicon-list-alt"></span> 유량
+		 				<span id="fluxzoom" class="glyphicon glyphicon-zoom-in" style="float:right"></span>
+		 				 </div>
+		 					<div class="row" >
+		 						<div class="col-lg-8 col-mg-8"> <img class="img-responsive" id="flux" ></div>
+				 				<div class="col-lg-4 col-mg-4"><img class="img-responsive" src="./img/legend_flow.jpg" style="vertical-align:middle;"></div>
+				 			</div>
+		 				</div>
+				</div>
+				<div class="col-lg-3 col-mg-3">
+		 			<div class="panel panel-primary">
+			 			<div class="panel-heading" style="padding: 5px 15px;"> <span class="glyphicon glyphicon-list-alt"></span> 포화도
+			 			<span id="saturationzoom" class="glyphicon glyphicon-zoom-in" style="float:right"></div>
+				 			<div class="row">
+			 						<div class="col-lg-8 col-mg-8"><img class="img-responsive" id="saturation"></div>
+					 				<div class="col-lg-4 col-mg-4"><img class="img-responsive" src="./img/legend_saturation.jpg" ></div>
+			 				</div>
+		 				</div>
+				</div>
+				<div class="col-lg-3 col-mg-3">
+		 			<div class="panel panel-primary">
+			 			<div class="panel-heading" style="padding: 5px 15px;"> <span class="glyphicon glyphicon-list-alt"></span> 강우
+			 			<span id="rainfallzoom" class="glyphicon glyphicon-zoom-in" style="float:right"></div>
+			 				<div class="row">
+		 						<div class="col-lg-8 col-mg-8"><img class="img-responsive" id="rainfall" ></div>
+				 				<div class="col-lg-4 col-mg-4"><img class="img-responsive" src="./img/legend_rainfall.jpg" ></div>
+				 		</div>
+		 			</div>
+				</div>
+				<div class="col-lg-3 col-mg-3">
+		 			<div class="panel panel-primary">
+			 			<div class="panel-heading" style="padding: 5px 15px;"> <span class="glyphicon glyphicon-list-alt"></span> 누적 강우
+			 			<span id="accumulationzoom" class="glyphicon glyphicon-zoom-in" style="float:right"></div>
+			 				<div class="row">
+		 						<div class="col-lg-8 col-mg-8"><img class="img-responsive" id="accumulation"></div>
+				 				<div class="col-lg-4 col-mg-4"><img class="img-responsive" src="./img/legent_accumulaterain.jpg" ></div>
+				 		</div>
+		 			</div>
+				</div>
+			</div>
+
+		<!-- image list area end -->
+
+
+ 			<div class="row">
+ 			<!-- <div class="row-fluid egal"> -->
+
+ 				<!-- 표영역 -->
+				  <div class="col-lg-3 col-mg-3" >
+
+				  	<div class="panel panel-primary" style="margin:0px;">
+			 			<div class="panel-heading" style="padding: 5px 15px;">모형 매개변수 (숫자는 임시 표현중임)
+							<span style="float:right"><button type="button" class="btn btn-default btn-xs" id="modify">저장</button></span>
+			 			</div>
+			 			<div class="panel-body fixed-panel" style="font-size:85%">
+
+			            <fieldset >
+			            	<legend class="legend1">&nbsp;<span class="glyphicon glyphicon-tag" aria-hidden="true" style="display:inline;"></span>&nbsp;Watershed</legend>
+				        	<div id="watershedparams"></div>
+				        </fieldset>
+
+
+			            <fieldset>
+			             	<legend class="legend2">&nbsp;<span class="glyphicon glyphicon-tag" aria-hidden="true" style="display:inline;"></span>&nbsp;Stream</legend>
+			             	<div id="streamparam"></div>
+			            </fieldset>
+
+			             <fieldset>
+			             	<legend class="legend3">&nbsp;<span class="glyphicon glyphicon-tag" aria-hidden="true" style="display:inline;"></span>&nbsp;Calibration coefficient</legend>
+			             	<div id="coeffiparams"></div>
+			            </fieldset>
+
+
+			            <!-- <table class="table  table-fixed table-striped ">
+				            <thead >
+						     	<th class="col-xs-6">
+						     	Params</th>
+						     	<th class="col-xs-6">Value</th>
+
+					    	</thead>
+					    	<tbody id="parameterlist">
+					    	</tbody>
+				  		</table> -->
+				  		<!--  <div align="right"><button type="button" class="btn" id="modify">수정</button></div> -->
+				  		</div>
+			  		</div>
+		 		</div>
+				<div class="col-lg-4 col-mg-4" >
+					<div class="panel panel-primary"  style="margin:0px;">
+			 			<div class="panel-heading" style="padding: 5px 15px;">분석결과 표</div>
+			 			<div class="panel-body fixed-panel" >
+
+			           <!--  <table class="table  table-fixed table-striped "> -->
+			           <div id="table_container">
+				           <table class="table  table-bordered">
+					            <thead>
+					            <tr id="colheader">
+
+	<!-- 						     	<th class="col-xs-6">
+							     	일시</th>
+							     	<th class="col-xs-2">관측유량<br/>(CMS)</th>
+							     	<th class="col-xs-2">계산유량<br/>(CMS)</th>
+							     	<th class="col-xs-2">강우<br/>(mm)</th>
+	 -->
+						    	</tr>
+						    	</thead>
+						    	<tbody id="tablelist">
+
+						    	</tbody>
+					  		</table>
+					  </div>
+				  		</div>
+			  		</div>
+			  	</div>
+		 		<!-- 표영역 -->
+
+		 		<div class="col-lg-5 col-mg-5" >
+					<!-- chart area -->
+			 		<div class="panel panel-primary"  style="margin:0px;">
+			 			<div class="panel-heading" style="padding: 5px 15px;" id="chart_bar_title">분석결과 챠트</div>
+			 			<div class="panel-body fixed-panel"><div id="chart"></div>
+			 		</div>
+			 		<!-- chart area -->
+
+			 	</div>
+
+			 </div>
+
+
+		</div><!--wrap -->
+
+</div><!--modal body-->
+</div><!--ㅡmodal content -->
+</div>
+
+
+
+	</body>
+
+</html>
+

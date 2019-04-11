@@ -1,0 +1,143 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="./css/local.css">
+    <script src='./js/jquery-1.11.2.js'></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script>
+    $(document).ready(function(){
+        $('#tabs a').click(function (e) {
+                 e.preventDefault()
+            $(this).tab('show')
+            });
+    });
+    </script>
+</head>
+<body>
+ <div class="container" >
+<!-- 헤더-->
+<div class="page-header">
+  <h1>GRM<br/><small>Grid based Rainfall-Runoff Model</small></h1>
+</div>
+<!--헤더-->
+<!-- 네비게이션 메뉴 -->
+<div id ="tabs">
+    <ul class="nav nav-tabs">
+      <li role="presentation" class="active"><a href="#grm">GRM</a></li>
+      <li role="presentation"><a href="#grmgui">GRM GUI</a></li>
+      <li role="presentation"><a href="#tools">Pre and post processing tools</a></li>
+      <li role="presentation"><a href="#download">Download</a></li>
+    </ul>
+    </div>
+<!-- 네비게이션 메뉴 -->
+
+ <!-- Tab panels -->
+  <div class="tab-content">
+   <!-- 첫번째 탭 내용-->
+    <div role="tabpanel" class="tab-pane active" id="grm">
+        <div class="panel panel-default">
+          <div class="panel-heading"><h3 class="panel-title">About GRM</h3> </div>
+            <div class="panel-body">
+                 <p> GRM(Grid based Rainfall-runoff Model)은 한국건설기술연구원에서 개발된 격자 기반의 물리적 분포형 강우-유출 모형이다. GRM 모형의 개발 연혁은 다음과 같다.
+                <p>· GRM 모형은 2008년에 최초로 개발되었다. 지표면 유출, 하도 유출, 지표하 유출, 흐름제어 유량 등을 모의할 수 있었다. <p>&nbsp;&nbsp;수자원 지리정보시스템인 HyGIS의 add-on인HyGIS-GRM으로 &nbsp;&nbsp;개발되었으며, HyGIS 환경에서 extension 메뉴로 실행되었다.
+                <p>·  2010년에는 기저유출 모의가 추가되었다. 실시간 강우자료를 이용한 실시간 유출해석 모듈이 개발 되었다.                
+                <p>·  2012년에는 단일 유역에서의 다지점 보정 기법이 개발되었다.
+                <p>·  2014년에는 침투, 지표하 유출, 기저유출 모의 기법이 개선되었다. 오픈소스 GIS인 MapWindow GIS(v.4.8.8)에서 실행할 수 있는 plug-in인 MW-GRM이 개발되었다. <p>&nbsp;&nbsp;PEST를 이용한 불확실도 해석 모듈이 개발되었다.                
+                <p>·  2015년에는 계산시간 간격(dt)에 대한 민감도가 개선되었다. 실시간 유출해석 모듈에서 실시간 흐름제어(flow control)를 모의할 수 있도록 개선되었다. <p>&nbsp;&nbsp;다수의 유역시스템을 연계 해석할 수 있는 다지점 보정기법이 개발되었다.
+                <p>·  2017년에는 GRM 모형을 GIS 및 GUI와 분리하여 독립적인 실행파일로 개발하였다. .NET을 이용한 병렬계산 기법과 계산시간 간격(dt)을 변화시킬 수 있는 기법을 개발하였다.
+                <p>GRM 모형은 한국건설기술연구원에서 지속적으로 개발되고 있으며, 모형의 안정성 향상, 기능 추가, 모델링 S/W 개발 등이 진행되고 있다.
+            </div><!--body-->
+            <div class="panel-footer"><table><tr><td width=80%></td><td  width=10%><img src="img/kict_t.png" width="70px" height="70px" ></td><td width=10%><img src="img/hermesys.jpg" ></td> </tr></table></div>
+        </div>
+    </div>
+     <!-- 첫번째 탭 내용-->
+   <!--두번째 탭 내용-->
+    <div role="tabpanel" class="tab-pane" id="grmgui">
+      <div class="panel panel-default">
+      <div class="panel-heading"><h3 class="panel-title">GRM GUI</h3> </div>
+            <div class="panel-body">
+                <p>2017.3. 현재 GRM GUI는 GRM 모형과 통합된 형태로 개발되었으며, MapWindow 4.8.8 plug-in 인 MW-GRM에 포함되어 있다.
+                <p>현재 GRM 모형의 QGIS plug-in GUI를 개발 중에 있다.
+            </div><!--body-->
+            · <div class="panel-footer"><table><tr><td width=80%></td><td  width=10%><img src="img/kict_t.png" width="70px" height="70px" ></td><td width=10%><img src="img/hermesys.jpg" ></td> </tr></table></div>
+     </div>
+    </div>
+    <!--두번째 탭 내용-->
+    <!--세번째 탭 내용-->
+    <div role="tabpanel" class="tab-pane" id="tools">
+         <div class="panel panel-default">
+         <div class="panel-heading"><h3 class="panel-title">Pre and post-processing tools</h3> </div>
+            <div class="panel-body">
+            <p>GRM 모형은 DEM, 토양도 및 토지피복도를 이용해서 생성된 지형 및 공간자료와 강우 레이어 등과 같은 많은 래스터 자료를 이용한다.
+            <p>Pre- and post-processing tools는 GRM의 입력자료 생성과 래스터 파일 처리를 위한 다양한 기능을 제공한다.
+            <p>Pre- and post-processing tools는 Drainage Tools와 GRM Tools로 구성된다.
+
+            <h3>1. GRM Tools</h3>
+            <p>GRM Tools에서는 다수의 입력파일과 모의결과 파일을 전후처리하기 위한 다양한 도구를 포함하고 있다.
+            <p>점 자료를 이용한 래스터 레이어 생성, 래스터 파일의 변환 및 클리핑과 리샘플링, 텍스트 파일 편집, 강우자료의 보정, 래스터 시계열 자료로 부터
+            다양한 정보 추출 기능, 위성영상을 이용한 강우 자료 생성, 정밀토양도를 이용한 토성 및 토양심 자료 생성 등의 기능을 제공한다.
+            <p>MW-GRM의 메뉴로 제공된다.
+            <h3>2. Drainage Tools</h3>
+            <p>(Drainage Tools는 현재 개발 중이며, 향후 GRM의 QGIS plug-in GUI와 함께 제동될 예정이다.)
+            <p>DEM 분석을 통해서 유역, 경사, 흐름방향, 흐름누적수, 하천망 레이어 등과 같이 GRM의 입력 지형자료를 생성할 수 있는 GIS 도구이다.
+            <!-- Drainage Tools에서는 HyGIS의 sink와 flat area 처리 모듈과, TauDEM의 유역생성 모듈을 이용하여 DEM을 이용한 수문학적 지형인자를 생성한다. -->
+            </div><!--body-->
+            · <div class="panel-footer"><table><tr><td width=80%></td><td  width=10%><img src="img/kict_t.png" width="70px" height="70px" ></td><td width=10%><img src="img/hermesys.jpg" ></td> </tr></table></div>
+        </div>
+    </div>
+    <!--세번째 탭 내용-->
+    <!--네번째 탭 내용-->
+    <div role="tabpanel" class="tab-pane" id="download">
+         <div class="panel panel-default">
+         <div class="panel-heading"><h3 class="panel-title">Download</h3> </div>
+            <div class="panel-body">
+                <h3>Latest version</h3>
+                <p><a href="./data/GRM2017_20170628.zip">GRM2017 beta</a> ( uploaded June 20, 2017 )
+				<p><a href="./data/GRMv2017_환경설정_및_시작_가이드라인_20170630.pdf">GRMv2017 환경설정 및 시작 가이드라인.pdf</a> ( uploaded June 20, 2017 )
+				<p>- 콘솔 방식으로 실행되는 GRM 모형(GRM2017 베타 버전)
+				<p>- Sample Data와 Document 포함 	
+                <h3>MW-GRM</h3>
+                <p><a href="./data/MWGRM_20170301.zip">MWGRM_20170301</a> ( uploaded June 20, 2017 )
+				<p><a href="./data/MWGRM 환경설정 및 시작 가이드라인.pdf">MWGRM 환경설정 및 시작 가이드라인.pdf</a> ( uploaded June 20, 2017 )
+				<p>- GRM2016, GUI, GRM Tools, Sample Data, Document 포함
+				<p>- MapWindow 4.8.8 환경에서 실행하기 위한 plug-in
+				<p>- 2016년까지 개발된 모형으로 버그 수정 수준에서 유지관리됨
+
+                <h3>Pre- and post-processing tools   </h3>  <!-- 다운로드 받을 파일 이름.zip -->
+                <p>- 현재 : GRM Tools가 MW-GRM에 포함되어 있음
+				<p>- 향후 : GRM Tools, Drainage Tools가 QGIS plug-in과 함께 제공 예정
+                <!-- 간단한 설명(ex. 이 파일은 windows10에서 테스트된 버전입니다.) -->
+
+                <!-- Old version -->
+
+                <!-- MW-GRM
+                다운로드 받을 파일 이름1.zip
+                간단한 설명(ex. 이 파일은 windows10에서 테스트된 버전입니다.)
+                다운로드 받을 파일 이름2.zip
+                간단한 설명(ex. 이 파일은 windows10에서 테스트된 버전입니다.)
+                Pre- and post-processes tools
+                다운로드 받을 파일 이름1.zip
+                간단한 설명(ex. 이 파일은 windows10에서 테스트된 버전입니다.)
+                다운로드 받을 파일 이름2.zip
+                간단한 설명(ex. 이 파일은 windows10에서 테스트된 버전입니다.)
+
+                Document
+                다운로드 받을 파일 이름1.zip
+                간단한 설명(ex. 이 파일은 windows10에서 테스트된 버전입니다.)
+                다운로드 받을 파일 이름2.zip
+                간단한 설명(ex. 이 파일은 windows10에서 테스트된 버전입니다.) -->
+        </div><!--body-->
+        <div class="panel-footer"><table><tr><td width=80%></td><td  width=10%><img src="img/kict_t.png" width="70px" height="70px" ></td><td width=10%><img src="img/hermesys.jpg" ></td> </tr></table></div>
+        </div>
+        </div><!--  panel panel-default end -->
+    <!--네번째 탭 내용-->
+  </div>
+   <!-- Tab panels  end -->
+  </div>
+
+</div><!--container-->
+</body>
+</html>

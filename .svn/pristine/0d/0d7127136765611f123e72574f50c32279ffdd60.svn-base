@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>골든타임 </title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+
+
+    <link rel="stylesheet" href="./OpenLayers-2.13.1/theme/default/style.css" type="text/css">
+    <link rel="stylesheet" href="./bootstrap-3.3.5/css/bootstrap.css">
+    <link rel="stylesheet" href="./bootstrap-3.3.5/css/bootstrap-theme.min.css">
+
+      <link rel="stylesheet" type="text/css" href="./css/jquery.timepicker.css" /><!--
+    <link rel="stylesheet" type="text/css" href="./css/bootstrap-datepicker.css" />
+ <link rel="stylesheet" href="./css/jquery-ui.css" type="text/css" media="all" /> 2016.12.29 100% unused -->
+
+    <link rel="stylesheet" href="./css/style.css" >
+    <link rel="stylesheet" href="./css/BootSideMenu.css" >
+
+    <script src="./OpenLayers-2.13.1/lib/OpenLayers.js"></script>
+    <script src="http://map.vworld.kr/js/apis.do?type=Base&apiKey=7696B8C8-A6B4-358B-8288-81EDA9A308C8 "></script> <!-- golden or hydroradar-->
+
+    <script src="http://map.vworld.kr/js/apis.do?type=Base&apiKey=64741AAF-7FE8-3C88-BFD7-33545F8C8511 "></script><!--131-->
+
+    <script src="./js/jquery-1.11.2.js"></script>
+    <script src="./js/common.js"></script>
+    <script src="./js/util.js"></script>
+    <script src="./js/config.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/jquery-ui.min.js"></script>
+
+
+    <script>
+    OpenLayers.ProxyHost = "http://dev.openlayers.org/sandbox/august/trunk/util/openlayers-proxy.jsp?url=";
+    var HydroRadar_Map, comp201502091400, comp201502091410,comp201502091430,comp201502091440 ;
+    var map, osm, vMap;
+    var vSat , vHybrid, vGray, vMidnight;
+    var selectedAreaName='';
+
+    var selectedFid='';
+    var selectedAreaCode ='';
+    var wfsBasinMerge;
+    var process_arr=[];
+    var clientip;
+    var href = window.location.href;
+    var queryarr = href.split('?');
+ var wfsNDGWatchPoint ;
+
+ var wfstest;
+  var wmstest1 ;
+    $(document).ready(function(){
+        $("#getfiltlerdata").click(function(){
+
+            redrawData();
+        });
+    });
+
+    function redrawData(){
+
+
+        wfsNDGWatchPoint.mergeNewParams({ 'CQL_FILTER': 'WOP=0'});
+// wfs mergeNewParams은 안되나보네... 흠. 일단 홀딩.
+
+        //map.redraw();
+    }
+
+        function init(){
+        var option = {
+            controls: [
+            new OpenLayers.Control.Attribution()
+            ],
+            projection: new OpenLayers.Projection( defautProjection ),
+            displayProjection: new OpenLayers.Projection( displayProjection ),
+            numZoomLevels:20
+
+        };
+
+        map = new OpenLayers.Map("map", option);
+        osm = new OpenLayers.Layer.OSM();
+
+        vMap = new vworld.Layers.Base('브이월드');
+        vSAT = new vworld.Layers.Satellite('브이월드(영상)');
+        vHybrid = new vworld.Layers.Hybrid('브이월드(영상용 라벨)');
+        vGray = new vworld.Layers.Gray("브이월드(Gray)");
+        vMidnight = new vworld.Layers.Midnight("브이월드(Midnight)");
+
+
+        if (vMap != null) { map.addLayer(vMap) ;}
+        if (vSAT != null) {map.addLayer(vSAT);};
+        if (vHybrid != null) {map.addLayer(vHybrid);}
+        if (vGray != null) {map.addLayer(vGray);}
+        if (vMidnight != null) {map.addLayer(vMidnight);}
+
+        map.addLayer(osm);
+
+        vHybrid.setVisibility(false);
+
+        var switcherControl = new OpenLayers.Control.LayerSwitcher();
+        map.addControl(switcherControl);
+        map.addControl(new OpenLayers.Control.Navigation());
+        map.addControl(new OpenLayers.Control.Scale());
+        map.addControl(new OpenLayers.Control.ScaleLine());
+        map.addControl(new OpenLayers.Control.PanZoomBar());
+        map.addControl(new OpenLayers.Control.MousePosition());
+
+
+
+/* 추가 */
+    //  wfsNDGWatchPoint = createWfsmap_new( 'GoldenT:NDG_WatchPoint_5186', map );
+    //  wfs_NDG_QWP = createWfsmap_new( 'GoldenT:wfs_NDG_QWP', map ); //조건 QWP=1 LABEL : Name
+
+/*wfs filter text */
+//https://gis.stackexchange.com/questions/43086/is-it-possible-to-configure-wfs-layer-to-use-get-requests
+    var wfs_options = {
+    url:  proxyUrl + "http://210.92.123.150:8080/geoserver/wfs",
+    params: {
+        request: "GetFeature",
+        service: "wfs",
+        version: "1.0.0",
+        typeName: "NDG_WatchPoint_5186"
+    },
+    format: new OpenLayers.Format.GML({
+        featureNS: "http://210.92.123.150/GoldenT",
+        geometryName: "the_geom"
+    })
+}
+
+
+//http://annotations.tistory.com/83
+
+
+  //wmstest1 = createWmsLayeWithAlias("wms 필터 테스트1", "GoldenT:NDG_WatchPoint_5186","QWP=1");
+
+wmstest1 = createWmsLayer( ["GoldenT:NDG_WatchPoint_5186"]);
+
+  //wmstest2 = createWmsLayeWithAlias("wms 필터 테스트2", "GoldenT:NDG_WatchPoint_5186","QCTP=1");
+  //wmstest3 = createWmsLayeWithAlias("wms 필터 테스트3", "GoldenT:NDG_WatchPoint_5186","QCP=1");
+  //wmstest4 = createWmsLayeWithAlias("wms 필터 테스트4", "GoldenT:NDG_WatchPoint_5186","WOP=1");
+
+ map.addLayer(wmstest1);
+
+wfsNDGWatchPoint = createWfsmap_new( 'GoldenT:NDG_WatchPoint_5186', map );
+ var data  = {
+                service :'wfs',
+                version : '1.1.0',
+                request : 'GetFeature',
+                outputformat: 'json',
+                srsName :  defautProjection ,
+                typeName :'GoldenT:NDG_WatchPoint_5186'
+                //                ,CQL_FILTER :'WOP=1'
+            };
+
+            var reqUrl_NDGWatchPoint = createRequestUrl( wfsUrl, data );
+
+  ajaxCall(
+            reqUrl_NDGWatchPoint
+            , function(data ){
+
+                var geojson = new OpenLayers.Format.GeoJSON();
+                map.addLayer(wfsNDGWatchPoint );
+                    wfsNDGWatchPoint.addFeatures(geojson.read(data));
+                //map.zoomToExtent(wfsBasinMerge.getDataExtent());
+            }
+            , 'json'
+        );
+
+/*
+wmstest1.mergeNewParams({"CQL_FILTER" :"QWP=1"});
+wmstest2.mergeNewParams({"CQL_FILTER" :"QCTP=1"});
+wmstest3.mergeNewParams({"CQL_FILTER" :"QCP=1"});
+wmstest4.mergeNewParams({"CQL_FILTER" :"WOP=1"});
+
+
+ map.addLayer(wmstest1);
+  map.addLayer(wmstest2);
+   map.addLayer(wmstest3);
+    map.addLayer(wmstest4);
+    */
+/*
+wmstest1.redraw(true);
+wmstest2.redraw(true);
+wmstest3.redraw(true);
+wmstest4.redraw(true);
+*/
+/*
+wmstest.mergeNewParams({
+CQL_FILTER :"WOP=1"
+});
+
+wmstest.redraw(true);
+*/
+/*
+     wfstest = new OpenLayers.Layer.Vector("WFS", {
+        strategies: [new OpenLayers.Strategy.BBOX()],
+        protocol: new OpenLayers.Protocol.WFS({
+            url: proxyUrl + "http://210.92.123.150:8080/geoserver/wfs",
+            featureType: "NDG_WatchPoint_5186",
+            featureNS: "GoldenT"
+            ,geometryName: "the_geom"
+
+        })
+         ,filter: new OpenLayers.Filter.Logical({
+            type: OpenLayers.Filter.Logical.OR,
+            filters: [
+                new OpenLayers.Filter.Comparison({
+                    type: OpenLayers.Filter.Comparison.EQUAL_TO,
+                    property: "QWP",
+                    value: "1"
+                }),
+                new OpenLayers.Filter.Comparison({
+                    type: OpenLayers.Filter.Comparison.EQUAL_TO,
+                    property: "TWP",
+                    value: "1"
+                })
+            ]
+        })
+    });
+*/
+        map.zoomToExtent(new OpenLayers.Bounds(bounds).transform( displayProjection , map.getProjection()), 7);
+
+
+     }
+
+</script>
+
+</head>
+<body onload="init()">
+    <input type="button" id="getfiltlerdata" text="filter test">
+ <div id="map" class="smallmap">
+ <div id="MatrikelOutput"></div>
+ </body>
+</html>
